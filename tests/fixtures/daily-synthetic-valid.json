@@ -1,0 +1,14 @@
+{
+  "symbol": "BBCA.JK",
+  "start": "2026-09-09",
+  "end": "2026-09-09",
+  "data": [
+    {
+      "date": "2026-09-09",
+      "summary": [
+        {"broker_code": "ZA", "bfreq": 2, "blot": 3, "bval": 30000, "bavg_per_share": 100, "sfreq": 1, "slot": 1, "sval": 10000, "savg_per_share": 100, "nlot": 2, "nval": 20000, "navg_per_share": 100},
+        {"broker_code": "ZB", "bfreq": 1, "blot": 1, "bval": 10000, "bavg_per_share": 100, "sfreq": 2, "slot": 3, "sval": 30000, "savg_per_share": 100, "nlot": -2, "nval": -20000, "navg_per_share": 100}
+      ]
+    }
+  ]
+}

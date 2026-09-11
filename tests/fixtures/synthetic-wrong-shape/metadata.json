@@ -1,0 +1,8 @@
+{
+  "snapshot_id": "46512fa1-b670-5adf-a441-263badb24ffe",
+  "retrieved_at": "2040-01-01T00:00:00.000000Z",
+  "endpoint": "https://api.sectors.app/v2/brokers/",
+  "http_status": 200,
+  "sha256": "65a4c0c240f982a2c1ba5ffc6645a38f4105d0f70a6ff8a780b9cabeefd570c9",
+  "source": "synthetic"
+}

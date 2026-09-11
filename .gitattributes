@@ -1,0 +1,2 @@
+# Snapshot hashes cover exact bytes; never translate fixture line endings.
+tests/fixtures/**/body.bin -text
