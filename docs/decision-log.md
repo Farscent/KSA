@@ -98,6 +98,28 @@ universe and fixed end date with an initial trading-day lookback target. The
 prerequisite. This milestone makes no network requests and does not implement
 ingestion, scoring, serving tables, or frontend work.
 
+## Serving contract draft under review
+
+The first explicit application contract, [serve-contract.md](serve-contract.md),
+is proposed as `1.0.0-draft.1` for review with Harfi. It defines `serve_alert` at
+symbol/day grain and `serve_alert_evidence` at symbol/day/evidence-type/cohort
+grain, with application identifiers independent of raw tables. Field names,
+versioning, quality summaries, null handling, and display explanations are review
+proposals, not approved scoring logic.
+
+The two checked-in BBCA / 2026-09-09 fixtures are hand-written and labeled
+`SYNTHETIC_EXAMPLE`. Monetary values and cohort assignments are fabricated;
+qualification fields illustrate the demo policy rather than publishing an actual
+scored result. Signal state is `NOT_EVALUATED`; score and severity are null with
+`PENDING_DEFINITION`. No final formulas, thresholds, evaluated signal states or
+severity labels are invented. Fixture validation implements no serving tables.
+
+Harfi and Farhan still need to agree scoring state/scale/severity, reason-code
+presentation, version compatibility, publication/freshness behavior, historical
+cohort mapping, market scope, and display-text ownership. The demo universe stays
+frozen. Multi-stock ingestion and scoring remain pending; there is no network
+fetch, production scoring, or frontend implementation in this milestone.
+
 ## Proposed and pending decisions
 
 | Topic | Status | Evidence or decision still required |
@@ -115,7 +137,9 @@ ingestion, scoring, serving tables, or frontend work.
 | Daily completeness | OPERATIONALLY_COMPLETE; external proof pending | The [one-day result](daily-qualification.md) is safe for demo analysis under the accepted nullability and active-population policy. Market/session scope, upstream completeness, historical membership and an independent control remain unproven. |
 | Classification history | Pending | Establish whether dated effective classifications exist, first reliable observation, treatment before that time, and trade-date/as-of timestamp mapping. Observed current data is not historical truth. |
 | Exchange calendar | Pending | Establish authoritative trading dates, sessions/timezone, holidays, suspensions, and missing-vs-zero activity semantics. |
-| Stable `serve_*` contract | Pending | Farhan and Harfi agree fields, versioning, metric reasons, freshness, coverage flags, and permitted interpretation after completeness and scoring decisions. |
+| `serve_*` contract | Under review | Version `1.0.0-draft.1` and deterministic examples exist; Farhan and Harfi must agree pending fields and semantics before a stable version. |
+| Multi-stock ingestion | Pending | Frozen demo scope only; resolve calendar and acquisition prerequisites before implementation. |
+| Scoring | Pending | No production formulas, thresholds, state transitions, or severity mapping implemented. |
 
 The fixed one-stock-day validator and archived observation now exist. Next concrete
 step for external completeness: obtain market/session scope plus an independent
