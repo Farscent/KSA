@@ -1,0 +1,16 @@
+{
+  "symbols": [
+    "BBCA",
+    "BBRI",
+    "BMRI",
+    "BBNI",
+    "TLKM",
+    "ASII",
+    "ICBP",
+    "INDF",
+    "ANTM",
+    "MDKA"
+  ],
+  "end_date": "2026-09-09",
+  "lookback_trading_days": 20
+}

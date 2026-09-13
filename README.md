@@ -1,6 +1,8 @@
 ## Current implementation progress
 
-The current milestone establishes the broker-registry and historical broker-dimension foundation for the KSA project.
+The broker registry foundation, `dim_broker` SCD2, and BBCA one-day qualification
+are complete. The demo universe is now frozen in a single checked-in
+[configuration](sectors/demo-scope.json); see [demo scope](docs/demo-scope.md).
 
 ### What has been implemented
 
@@ -19,6 +21,8 @@ The implementation currently supports:
 * Retention of historical broker classifications
 * Synthetic fixtures for deterministic testing
 * Explicit live fetching with bounded retries and caching
+* Accepted BBCA one-day qualification under the demo operational policy
+* Offline loading and validation of the frozen demo universe configuration
 
 ### Verification completed
 
@@ -77,19 +81,27 @@ which is consistent with exactly one broker changing classification from institu
 | Milestone                                     | Status                                      |
 | --------------------------------------------- | ------------------------------------------- |
 | Align on signal thesis: structure ≠ direction | In progress                                 |
-| Confirm API quota                             | Pending                                     |
-| Lock 10 demo stocks and fixed end date        | Pending                                     |
-| Pull and cache `/v2/brokers/`                 | Implemented                                 |
-| Profile registry cohort coverage              | Implemented                                 |
-| Define versioned `dim_broker` SCD2 table      | Implemented and verified                    |
-| One-stock-day BBCA qualification              | Operationally complete for demo analysis; external completeness unproven |
+| Broker registry foundation                    | Complete: capture, cache, replay, validation, and profiling |
+| `dim_broker` SCD2                             | Complete                                    |
+| BBCA one-day qualification                    | Complete and accepted for demo operational policy; external completeness unproven |
+| Demo universe and fixed end date              | Frozen; [scope and initial lookback](docs/demo-scope.md) |
+| API credit grant                             | 1,000 hackathon team credits according to official competition rules, as supplied in the project decision |
+| Endpoint credit consumption and rate limits   | Pending confirmation; not independently established |
 | Freeze `serve_*` schema with Harfi            | Pending                                     |
 | Create `serve_alert_evidence.json` fixture    | Pending                                     |
-| Build full market-data ingestion              | Pending                                     |
-| Add production scoring                        | Pending                                     |
+| Multi-stock ingestion                        | Pending                                     |
+| Scoring                                      | Pending                                     |
 | Connect application / Run Scan flow           | Pending                                     |
 
 ### Current scope
+
+The frozen configuration contains ten symbols with a fixed end date of
+2026-09-09 and an initial target of 20 IDX trading days including that date.
+The actual date range must be resolved from verified IDX trading dates, not
+naive weekdays. No start date or new network fetch is part of this milestone.
+The competition credit grant is recorded from the supplied project decision;
+the rules and account balance were not independently rechecked here, and the
+grant does not establish per-request costs or rate limits.
 
 At this stage, the project answers an important foundational question:
 
@@ -99,11 +111,11 @@ It does **not yet interpret that broker structure as bullish or bearish directio
 
 ### Next milestone
 
-Before expanding into the full demo universe, the next steps are:
+With the demo universe frozen, the next steps are:
 
 1. Use the accepted BBCA demo qualification policy; obtain matching-scope evidence before claiming external completeness.
-2. Confirm the practical Sectors API request quota.
-3. Freeze the 10-stock demo universe and end date.
+2. Confirm endpoint credit consumption, available balance, and practical API rate limits.
+3. Resolve the initial lookback from verified IDX trading dates.
 4. Agree on the stable `serve_*` schema with the application side.
 5. Create deterministic serving fixtures.
 6. Build market-data ingestion and raw persistence.
@@ -268,7 +280,7 @@ need explicit migrations rather than editing a live database implicitly.
 
 ## Scope and next step
 
-The next foundation milestone is implemented as a separate, fixed-case
+The completed daily qualification milestone is implemented as a separate, fixed-case
 `qualify-day` command for **BBCA / 2026-09-09**. See
 [daily qualification](docs/daily-qualification.md) for its exact request, calendar
 evidence, offline replay, report semantics, and limits. It reads the current real
