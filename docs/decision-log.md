@@ -5,7 +5,48 @@ Recorded 2026-09-11. “Confirmed” denotes the user's metric/project requireme
 “proposed” and “pending” do not imply approval. No real data was fetched during
 the initial foundation verification. A subsequent user-run live registry fetch
 succeeded; see [verification.md](verification.md). Daily trading-data availability
-has not been established.
+has been observed for the BBCA pilot; broader availability remains unproven.
+
+## Agreed demo data-quality policy (2026-09-13)
+
+These decisions supersede the pilot's original fatal nullability and blocking
+absence treatment. They were implemented using the existing archived observation
+and offline fixtures, with no new network requests.
+
+1. **Zero-activity average nullability.** The observed provider deviation is 25
+   null side averages despite the reviewed non-nullable schema. Our demo policy
+   accepts null `bavg_per_share` only when `bval == 0 AND blot == 0 AND bfreq == 0`,
+   and null `savg_per_share` only when `sval == 0 AND slot == 0 AND sfreq == 0`.
+   Activity measures must be valid integer zeros. Preserve every raw null; never
+   convert it to zero. Record `KNOWN_NULLABILITY_DEVIATION` and
+   `VALID_WITH_KNOWN_PROVIDER_DEVIATION` when no blocking errors remain. Any
+   nonzero same-side activity or malformed/missing required value remains invalid.
+   No new formula or validation rule is added for `navg_per_share`.
+2. **Active broker population.** Accept the documented `ACTIVE_BROKERS_ONLY`
+   contract as `ACTIVE_BROKER_CONTRACT_ACCEPTED`. Absent registered brokers remain
+   in `registry_brokers_absent`, not observed / presumed inactive for the symbol-day.
+   Absence alone does not fail qualification. Never synthesize rows or activity.
+   Current registry membership does not prove historical membership; presumed
+   inactivity is not an externally proven zero-activity fact.
+3. **Operational completeness.** Require HTTP 200, matching request identity,
+   expected trading-day group, nonempty response, unique/known broker codes,
+   valid activity numerics and schema under decision 1, passing per-row net-value
+   and net-lot identities, and reviewed-calendar / real-registry prerequisites.
+   Passing yields `OPERATIONALLY_COMPLETE`, `operational_completeness: PASS`, and
+   `safe_for_demo_analysis: true`; failure yields `FAIL` and false. Aggregate
+   buy=sell equality remains descriptive because common market/session scope is
+   not established. An independent control is not required for demo eligibility.
+
+The archived BBCA / 2026-09-09 observation passes this operational policy: 76
+unique active brokers, 88 in the current registry, 12 listed absences, no unknowns
+or duplicates, and all 25 null averages on verified zero-activity sides. Replay
+exits 0. This accepts a provider deviation for demo use; it does not establish a
+new provider guarantee or externally prove market-wide completeness.
+`external_reconciliation: NOT_EVALUATED`, `safe_to_call_complete: false`, and
+`externally_proven_complete: false` remain until independent market-wide evidence
+actually demonstrates completeness. Scope, upstream coverage and historical
+membership remain unproven. No scoring, serving tables, multi-symbol ingestion,
+synthetic activity, or new requests are part of this change.
 
 ## Confirmed requirements
 
@@ -56,21 +97,21 @@ before planning calls; do not extrapolate quota from the documented range.
 | Thresholds and baseline statistic | Pending | Define comparison statistic and thresholds; no numeric thresholds approved. |
 | Daily structural rule | Pending | Agree exact logical condition combining approved measures. |
 | Severity formula | Pending | Agree formula, scale, nullability, and interpretation. |
-| Coverage policy | Pending | Establish required broker universe, missing-input behavior, and acceptable completeness/reconciliation evidence. |
+| Coverage policy | Demo policy agreed; external proof pending | Apply the three decisions above for one-day demo analysis; establish matching-scope independent evidence before claiming market-wide completeness. |
 | Missing-day persistence | Pending | Decide whether/how incomplete days invalidate the five-day result; no silent omission or imputation. |
 | API access/quota | Partially verified; quota pending | A live unfiltered registry request succeeded on 2026-09-11. Available quota/credits, renewal period, and access to required daily endpoints remain unverified. |
 | Request limits | Pending | Confirm account rate/concurrency limits, pagination/caps, allowed range semantics, and retry budget before backfill planning. |
 | Ten demo symbols | Pending | User-selected or explicitly approved ten-symbol list; none supplied or invented. |
 | End date | Fixed for one-day experiment; broader demo pending | User selected BBCA / 2026-09-09 for qualification only. This does not select the ten-symbol demo's end date. |
-| Daily completeness | Experiment executed; not COMPLETE | The [one-day result](daily-qualification.md) contains 76 active broker rows with matching net arithmetic and balanced totals; 25 zero-side average nulls contradict the non-nullable published schema. Individual absences, market/session scope, upstream completeness and an independent control remain unresolved. |
+| Daily completeness | OPERATIONALLY_COMPLETE; external proof pending | The [one-day result](daily-qualification.md) is safe for demo analysis under the accepted nullability and active-population policy. Market/session scope, upstream completeness, historical membership and an independent control remain unproven. |
 | Classification history | Pending | Establish whether dated effective classifications exist, first reliable observation, treatment before that time, and trade-date/as-of timestamp mapping. Observed current data is not historical truth. |
 | Exchange calendar | Pending | Establish authoritative trading dates, sessions/timezone, holidays, suspensions, and missing-vs-zero activity semantics. |
 | Stable `serve_*` contract | Pending | Farhan and Harfi agree fields, versioning, metric reasons, freshness, coverage flags, and permitted interpretation after completeness and scoring decisions. |
 
 The fixed one-stock-day validator and archived observation now exist. Next concrete
-step: resolve the zero-side average nullability contract and obtain market/session
-scope plus an independent matching control before approving completeness or
-scaling ingestion. The future application must read prepared serving results;
+step for external completeness: obtain market/session scope plus an independent
+matching control. Demo operational acceptance is agreed; broader ingestion remains
+a separate milestone. The future application must read prepared serving results;
 Run Scan must not initiate live Sectors requests.
 
 | Completeness pilot symbol | Confirmed | BBCA — selected as the first high-liquidity stock for daily broker-data qualification. |

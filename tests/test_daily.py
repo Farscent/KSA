@@ -26,7 +26,8 @@ class DailyTests(unittest.TestCase):
         self.cache = self.root / "cache"
         self.evidence = d.load_evidence()
         self.payload = json.loads((FIXTURES / "daily-synthetic-valid.json").read_text())
-        self.registry = {"broker_codes": ["ZA", "ZB", "ZC"], "latest_applied_snapshot": {"source": "synthetic"}}
+        # Simulated real-source prerequisite; all activity fixtures stay synthetic.
+        self.registry = {"broker_codes": ["ZA", "ZB", "ZC"], "latest_applied_snapshot": {"source": "local"}}
 
     def observation(self, payload=None, *, body=None, status=200, encoding="identity", stamp=None):
         if body is None:
@@ -82,8 +83,18 @@ class DailyTests(unittest.TestCase):
         self.assertFalse(result["safe_to_call_complete"])
         self.assertEqual(result["absence_semantics"]["documented_population"], "ACTIVE_BROKERS_ONLY")
         self.assertFalse(result["absence_semantics"]["zero_activity_proven"])
-        self.assertIn("ABSENCE_SEMANTICS_UNRESOLVED", result["reason_codes"])
+        self.assertEqual(result["population_status"], "ACTIVE_BROKER_CONTRACT_ACCEPTED")
+        self.assertEqual(result["absence_semantics"]["individual_absent_broker_status"], "NOT_OBSERVED_PRESUMED_INACTIVE")
+        self.assertNotIn("ABSENCE_SEMANTICS_UNRESOLVED", result["reason_codes"])
         self.assertIn("COVERAGE_UNRESOLVED", result["reason_codes"])
+        self.assertEqual(result["schema_status"], "VALID")
+        self.assertEqual(result["operational_completeness"], "PASS")
+        self.assertTrue(result["safe_for_demo_analysis"])
+        self.assertEqual(result["qualification_status"], "OPERATIONALLY_COMPLETE")
+        self.assertEqual(result["external_reconciliation"], "NOT_EVALUATED")
+        self.assertFalse(result["externally_proven_complete"])
+        self.assertEqual(result["activity_observations"]["evaluated_rows"], 2)
+        self.assertTrue(all(c["evaluated_rows"] == 2 for c in result["reconciliation_checks"][:2]))
 
     def test_doc_arithmetic_checks_and_aggregate_observations_separate(self):
         result = self.report()
@@ -102,6 +113,8 @@ class DailyTests(unittest.TestCase):
         check = next(c for c in result["reconciliation_checks"] if c["name"] == "aggregate_value")
         self.assertEqual(check["status"], "OBSERVED_DIFFERENT")
         self.assertEqual(check["buy_minus_sell"], 20000)
+        self.assertEqual(result["operational_completeness"], "PASS")
+        self.assertTrue(result["safe_for_demo_analysis"])
 
     def test_documented_net_mismatch_is_explicit(self):
         self.payload["data"][0]["summary"][0]["nval"] = 123
@@ -171,20 +184,103 @@ class DailyTests(unittest.TestCase):
         self.assertEqual(checks["aggregate_value"]["status"], "NOT_EVALUATED")
         self.assertNotIn("buy_total", checks["aggregate_value"])
 
-    def test_zero_side_null_average_is_explained_but_not_coerced_or_accepted(self):
+    def test_zero_side_null_average_is_accepted_and_raw_null_preserved(self):
+        for side in ("b", "s"):
+            with self.subTest(side=side):
+                payload = deepcopy(self.payload)
+                row = payload["data"][0]["summary"][0]
+                row.update({side + field: 0 for field in ("freq", "lot", "val")})
+                row[side + "avg_per_share"] = None
+                row.update(nval=row["bval"] - row["sval"], nlot=row["blot"] - row["slot"])
+                original = deepcopy(payload)
+                directory = self.observation(payload)
+                archived = {name: (directory / name).read_bytes() for name in ("body.bin", "metadata.json")}
+                result = d.qualify(directory, self.registry, self.evidence)
+                self.assertNotIn("SCHEMA_INVALID", result["reason_codes"])
+                self.assertIn("KNOWN_NULLABILITY_DEVIATION", result["reason_codes"])
+                self.assertEqual(result["schema_status"], "VALID_WITH_KNOWN_PROVIDER_DEVIATION")
+                self.assertEqual(result["operational_completeness"], "PASS")
+                self.assertTrue(result["safe_for_demo_analysis"])
+                self.assertEqual(len(result["known_provider_deviations"]), 1)
+                self.assertEqual(len(result["null_required_fields"]), 1)
+                self.assertEqual(len(result["documented_schema_findings"]), 1)
+                self.assertEqual(result["schema_findings"], [])
+                self.assertEqual(d.decoded_json(*d.load_observation(directory)), original)
+                self.assertEqual(payload, original)
+                for name, body in archived.items():
+                    self.assertEqual((directory / name).read_bytes(), body)
+                # The shared inspector still records the published schema deviation
+                # without changing even its in-memory input or range behavior.
+                self.assertEqual(len(d.inspect_schema(payload)[0]["schema_findings"]), 1)
+                self.assertIsNone(row[side + "avg_per_share"])
+
+    def test_null_average_with_any_same_side_activity_remains_invalid(self):
+        for side in ("b", "s"):
+            for field in ("freq", "lot", "val"):
+                with self.subTest(side=side, field=field):
+                    payload = deepcopy(self.payload)
+                    row = payload["data"][0]["summary"][0]
+                    row.update({side + f: 0 for f in ("freq", "lot", "val")})
+                    row[side + field] = 1
+                    row[side + "avg_per_share"] = None
+                    row.update(nval=row["bval"] - row["sval"], nlot=row["blot"] - row["slot"])
+                    result = self.report(payload)
+                    self.assertEqual(result["schema_status"], "INVALID")
+                    self.assertIn("SCHEMA_INVALID", result["reason_codes"])
+                    self.assertEqual(result["known_provider_deviations"], [])
+                    self.assertEqual(result["operational_completeness"], "FAIL")
+                    self.assertFalse(result["safe_for_demo_analysis"])
+
+    def test_operational_failures_cannot_be_accepted(self):
+        cases = {
+            "identity": lambda p: p.update(symbol="TLKM.JK"),
+            "missing_day": lambda p: p.update(data=[]),
+            "wrong_day": lambda p: p["data"][0].update(date="2026-09-08"),
+            "empty": lambda p: p["data"][0].update(summary=[]),
+            "duplicate": lambda p: p["data"][0]["summary"].append(deepcopy(p["data"][0]["summary"][0])),
+            "unknown": lambda p: p["data"][0]["summary"][0].update(broker_code="ZZ"),
+            "numeric": lambda p: p["data"][0]["summary"][0].update(bval="30000"),
+            "null_activity": lambda p: p["data"][0]["summary"][0].update(bval=None),
+            "net_value": lambda p: p["data"][0]["summary"][0].update(nval=1),
+            "net_lots": lambda p: p["data"][0]["summary"][0].update(nlot=1),
+            "net_average_null": lambda p: p["data"][0]["summary"][0].update(navg_per_share=None),
+        }
+        for name, mutate in cases.items():
+            with self.subTest(case=name):
+                payload = deepcopy(self.payload)
+                mutate(payload)
+                result = self.report(payload)
+                self.assertEqual(result["operational_completeness"], "FAIL")
+                self.assertFalse(result["safe_for_demo_analysis"])
+                self.assertFalse(result["externally_proven_complete"])
+        self.assertFalse(self.report(status=503)["safe_for_demo_analysis"])
+        self.evidence["calendar"]["closed_weekdays_in_month"] = [d.TRADE_DATE]
+        self.assertFalse(self.report()["safe_for_demo_analysis"])
+        self.evidence = d.load_evidence()
+        self.registry["latest_applied_snapshot"]["source"] = "synthetic"
+        self.assertFalse(self.report()["safe_for_demo_analysis"])
+
+    def test_null_exception_requires_valid_zeros_and_does_not_hide_other_errors(self):
+        for side in ("b", "s"):
+            for field in ("freq", "lot", "val"):
+                for invalid in (None, False, "0", 0.0, -1):
+                    with self.subTest(side=side, field=field, invalid=invalid):
+                        payload = deepcopy(self.payload)
+                        row = payload["data"][0]["summary"][0]
+                        row.update({side + f: 0 for f in ("freq", "lot", "val")})
+                        row[side + "avg_per_share"] = None
+                        row[side + field] = invalid
+                        result = self.report(payload)
+                        self.assertEqual(result["known_provider_deviations"], [])
+                        self.assertIn("SCHEMA_INVALID", result["reason_codes"])
+                        self.assertFalse(result["safe_for_demo_analysis"])
         row = self.payload["data"][0]["summary"][0]
-        row.update(sfreq=0, slot=0, sval=0, savg_per_share=None, nval=row["bval"], nlot=row["blot"])
+        row.update(bval=0, blot=0, bfreq=0, bavg_per_share=None, sval=None)
         result = self.report()
+        self.assertEqual(len(result["known_provider_deviations"]), 1)
+        self.assertFalse(any(f["path"].endswith(".bavg_per_share") for f in result["schema_findings"]))
         self.assertIn("SCHEMA_INVALID", result["reason_codes"])
-        self.assertEqual(result["schema_status"], "INVALID")
-        self.assertIsNone(row["savg_per_share"])
-        observations = result["activity_observations"]
-        self.assertEqual(observations["active_value_rows"], 2)
-        self.assertEqual(observations["zero_sell_side_rows"], 1)
-        self.assertTrue(observations["null_average_observations"][0]["side_frequency_lots_value_all_zero"])
-        self.assertEqual(result["reconciliation_checks"][0]["status"], "PASS")
-        row["sfreq"] = 1
-        self.assertFalse(self.report()["activity_observations"]["null_average_observations"][0]["side_frequency_lots_value_all_zero"])
+        self.assertFalse(result["safe_for_demo_analysis"])
 
     def test_duplicate_json_keys_nonfinite_and_invalid_encoding(self):
         for body, encoding in [(b'{"data":[],"data":[]}', "identity"), (b'{', "identity"),
@@ -273,7 +369,9 @@ class DailyTests(unittest.TestCase):
                                    "--report", str(report_path)]), 0)
         get.assert_not_called()
         self.assertEqual(db_path.read_bytes(), original_db)
-        self.assertFalse(json.loads(report_path.read_text())["safe_to_call_complete"])
+        result = json.loads(report_path.read_text())
+        self.assertFalse(result["safe_to_call_complete"])
+        self.assertTrue(result["safe_for_demo_analysis"])
         synthetic_db = self.root / "synthetic.sqlite3"
         connection = r.connect(synthetic_db)
         r.refresh(connection, initial)

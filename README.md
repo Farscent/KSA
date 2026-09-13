@@ -82,7 +82,7 @@ which is consistent with exactly one broker changing classification from institu
 | Pull and cache `/v2/brokers/`                 | Implemented                                 |
 | Profile registry cohort coverage              | Implemented                                 |
 | Define versioned `dim_broker` SCD2 table      | Implemented and verified                    |
-| One-stock-day BBCA qualification              | Implemented; findings still need resolution |
+| One-stock-day BBCA qualification              | Operationally complete for demo analysis; external completeness unproven |
 | Freeze `serve_*` schema with Harfi            | Pending                                     |
 | Create `serve_alert_evidence.json` fixture    | Pending                                     |
 | Build full market-data ingestion              | Pending                                     |
@@ -101,7 +101,7 @@ It does **not yet interpret that broker structure as bullish or bearish directio
 
 Before expanding into the full demo universe, the next steps are:
 
-1. Resolve findings from the BBCA one-stock-day qualification.
+1. Use the accepted BBCA demo qualification policy; obtain matching-scope evidence before claiming external completeness.
 2. Confirm the practical Sectors API request quota.
 3. Freeze the 10-stock demo universe and end date.
 4. Agree on the stable `serve_*` schema with the application side.
@@ -279,6 +279,33 @@ Read [metric note](docs/metric-note.md), [decision log](docs/decision-log.md), a
 The [verification record](docs/verification.md) lists results and their limits.
 No full backfill, production scoring, frontend, LLM narration, peer screening, or
 Run Scan network integration is implemented. The one-day BBCA qualification fetched
-76 brokers and identified a published-schema nullability discrepancy plus unresolved
-coverage evidence. The next step is to resolve those findings before expanding to
-an approved demo universe or defining `serve_*` outputs.
+76 brokers. Offline replay now reports `OPERATIONALLY_COMPLETE`,
+`operational_completeness: PASS`, and `safe_for_demo_analysis: true`, and exits 0.
+
+The agreed demo policy accepts null buy/sell averages only when that same side's
+value, lots, and frequency are all valid integer zeros. All 25 observed BBCA nulls
+meet this rule. Raw nulls remain unchanged; the report records the provider/schema
+deviation as `VALID_WITH_KNOWN_PROVIDER_DEVIATION`. Null averages with activity
+and malformed data remain invalid; existing net-average checks are unchanged.
+
+The documented active-broker population is accepted as
+`ACTIVE_BROKER_CONTRACT_ACCEPTED`: the 12 absent current-registry brokers remain
+listed as not observed / presumed inactive, with no invented activity or zero rows.
+Current registry membership does not prove historical membership.
+
+Demo eligibility requires HTTP 200, correct symbol/date and expected day group,
+nonempty unique/known broker rows, valid numeric/schema data under the exception
+above, both documented per-row net identities, and reviewed-calendar / real-registry
+prerequisites. Aggregate buy=sell equality is descriptive; an independent control
+is not a demo requirement. `external_reconciliation: NOT_EVALUATED`,
+`safe_to_call_complete: false`, and `externally_proven_complete: false` distinguish
+operational acceptance from market-wide claims that remain unproven.
+
+Replay the existing observation without network access:
+
+```powershell
+python -m sectors qualify-day --observation data/daily-cache/6a6d9628-635f-4a9c-a7e3-49cef95bf7f4 --registry-db data/sectors.sqlite3 --report data/qualification/BBCA-2026-09-09.json
+```
+
+No new requests, scoring, serving tables, or multi-symbol ingestion are added by
+this policy change. Broader ingestion and `serve_*` outputs remain separate work.

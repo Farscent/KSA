@@ -112,7 +112,7 @@ side-by-side comparison of those individual differences was performed.
 python -m sectors registry --live --refresh --cache data/registry-cache --db data/sectors.sqlite3
 ```
 
-## One-day completeness qualification
+## Original one-day completeness qualification (before demo policy update)
 
 The fixed BBCA / 2026-09-09 experiment was implemented separately from the
 registry layer and executed through the user's authenticated PowerShell. Full
@@ -141,3 +141,26 @@ are in [daily-qualification.md](daily-qualification.md).
 The report returns `SCHEMA_INVALID`, `ABSENCE_SEMANTICS_UNRESOLVED`, and
 `COVERAGE_UNRESOLVED`, with `safe_to_call_complete: false`. No multi-day ingestion
 or production scoring was implemented.
+
+## Demo policy replay (2026-09-13)
+
+The [agreed demo policy](decision-log.md#agreed-demo-data-quality-policy-2026-09-13)
+supersedes the original blocking treatment above. No live API calls were made.
+
+- `python -m unittest discover -s tests -v`: all 57 tests passed, including
+  accepted null preservation, both sides' nonzero-activity rejection, operational
+  gates, aggregate imbalance, and existing archive/retry/registry/SCD2 behavior.
+- `python -m compileall -q sectors tests`: passed.
+- The requested archived BBCA replay exited 0 and regenerated
+  `data/qualification/BBCA-2026-09-09.json` as `daily-qualification-v2`.
+- `qualification_status: OPERATIONALLY_COMPLETE`, `operational_completeness: PASS`,
+  `safe_for_demo_analysis: true`, and all operational checks `PASS`.
+- `schema_status: VALID_WITH_KNOWN_PROVIDER_DEVIATION`: all 25 raw null averages
+  retained, with their original documented findings and accepted deviations;
+  no blocking schema findings. No unknown or duplicate brokers.
+- `population_status: ACTIVE_BROKER_CONTRACT_ACCEPTED`: 76 observed brokers,
+  88 in the current registry, and all 12 absences still listed without synthetic
+  rows or activity.
+- `external_reconciliation: NOT_EVALUATED`, `safe_to_call_complete: false`, and
+  `externally_proven_complete: false`. Reason codes are the informational
+  `KNOWN_NULLABILITY_DEVIATION` and `COVERAGE_UNRESOLVED`.

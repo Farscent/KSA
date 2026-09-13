@@ -28,7 +28,11 @@ API request was needed for analysis.
 | Buy / sell value | IDR 1,267,073,227,500 on each side; difference 0 |
 | Buy / sell lots | 1,933,751 on each side; difference 0 |
 | Buy / sell frequency | 33,227 on each side; difference 0 |
-| COMPLETE? | No: schema-contract discrepancy and unresolved coverage/absence evidence |
+| Schema status | `VALID_WITH_KNOWN_PROVIDER_DEVIATION`: 25 accepted zero-activity side-average nulls |
+| Population status | `ACTIVE_BROKER_CONTRACT_ACCEPTED` |
+| Operational completeness / demo analysis | `PASS` / `safe_for_demo_analysis: true`; `OPERATIONALLY_COMPLETE` |
+| External reconciliation | `NOT_EVALUATED`: no trusted matching-scope independent control |
+| Externally proven complete? | No; `safe_to_call_complete` and `externally_proven_complete` remain false |
 
 Absent registry brokers are `AD, AP, BF, FO, GA, GI, IC, ID, OK, PF, PI, YO`.
 These are absences from this response, not a list of proven missing trades.
@@ -37,16 +41,20 @@ All 76 returned rows have positive buy or sell value. Every null buy/sell averag
 occurs on a side with zero frequency, zero lots, and zero value. That pattern is
 consistent with an undefined average for a side with no activity. The published
 OpenAPI schema nevertheless requires those averages and does not declare them
-nullable. The report preserves the nulls, flags `SCHEMA_INVALID`, and separately
-explains the observed zero-activity association. It does not describe the gross
-activity values as corrupt or replace an undefined average with zero.
+nullable. This is an observed provider/schema deviation. Under the agreed demo
+policy, the report preserves the nulls and records `KNOWN_NULLABILITY_DEVIATION`
+instead of a fatal `SCHEMA_INVALID` for this exact pattern. It does not replace an
+undefined average with zero. Malformed values and null averages with activity
+remain invalid.
 
 The data is consistent with the documented active-broker daily population, and
 its reported arithmetic is internally balanced. The response does not establish
 market/session scope, absence of upstream omissions/truncation, historical
 membership of the 12 absent brokers, or an independent matching turnover control.
-Thus the final reason codes are `SCHEMA_INVALID`, `ABSENCE_SEMANTICS_UNRESOLVED`,
-and `COVERAGE_UNRESOLVED`; `safe_to_call_complete` remains false.
+The reason codes are now `KNOWN_NULLABILITY_DEVIATION` and `COVERAGE_UNRESOLVED`.
+Both are informational for this passing demo observation. Operational completeness
+accepts the documented active-broker population; it does not prove market-wide
+coverage. `safe_to_call_complete` remains false.
 
 The structured report is `data/qualification/BBCA-2026-09-09.json`; raw bytes and
 provenance are in `data/daily-cache/6a6d9628-635f-4a9c-a7e3-49cef95bf7f4/`.
@@ -92,8 +100,9 @@ miss without `--live` never makes a request.
 
 The command rejects other symbols/dates. It reads the current real registry in
 SQLite read-only mode and refuses a synthetic or empty registry database. An exit
-code of 0 means a report was produced without invalid input; `UNRESOLVED` is still
-not `COMPLETE`. Invalid data or HTTP failure yields a report and exit 1. Missing
+code of 0 means `OPERATIONALLY_COMPLETE` / safe for demo analysis under the policy
+below, without asserting external completeness. Failed operational checks or HTTP
+failure yield a report and exit 1. Missing
 prerequisites/credentials fail before requesting data.
 
 Replay this real observation without fetching again:
@@ -102,8 +111,10 @@ Replay this real observation without fetching again:
 python -m sectors qualify-day --observation data/daily-cache/6a6d9628-635f-4a9c-a7e3-49cef95bf7f4 --registry-db data/sectors.sqlite3 --report data/qualification/BBCA-2026-09-09.json
 ```
 
-The expected exit code is 1 because the report flags the documented-schema
-nullability discrepancy. That exit does not discard the report or archived data.
+The expected exit code is 0. The 25 accepted nulls remain in the archive and in
+`null_required_fields`; their original findings remain in
+`documented_schema_findings`, with accepted instances separately recorded in
+`known_provider_deviations`. Only blocking findings remain in `schema_findings`.
 
 ## Calendar evidence and limits
 
@@ -129,7 +140,7 @@ retrieval timestamps, and SHA-256 hashes are in
 The [Sectors daily endpoint and its OpenAPI schema](https://docs.sectors.app/api-references/v2/indonesia/brokers/broker-summary-by-symbol)
 describe an object with `symbol`, `start`, `end`, and a `data` array. Each day has
 `date` and `summary`; each summary row has a broker code and the fields below.
-No nullable numeric fields are declared. The code reports extra/missing fields,
+No nullable numeric fields are declared in the reviewed schema. The code reports extra/missing fields,
 wrong types, null required values, wrong symbol/date, duplicate groups, and malformed
 rows. It retains and counts malformed rows where their container is identifiable;
 unparseable row counts remain null rather than becoming zero.
@@ -139,7 +150,7 @@ unparseable row counts remain null rather than becoming zero.
 | `bval`, `sval`, `nval` | Buy/sell/net value, IDR | Integers; gross values nonnegative; net may be signed. |
 | `blot`, `slot`, `nlot` | Buy/sell/net lots | Integers; gross lots nonnegative; net may be signed. |
 | `bfreq`, `sfreq` | Buy/sell frequency | Nonnegative integer counts; exact counting convention is not supplied. |
-| `bavg_per_share`, `savg_per_share` | Buy/sell average per share | Finite nonnegative numbers; per-share IDR interpretation follows value currency. |
+| `bavg_per_share`, `savg_per_share` | Buy/sell average per share | Finite nonnegative numbers, or explicit null only under the zero-activity rule below; per-share IDR interpretation follows value currency. |
 | `navg_per_share` | Net average per share | Finite number; do not infer its formula or impose positivity. |
 
 Numeric strings, booleans, nulls, non-finite numbers, and negative gross activity
@@ -147,7 +158,23 @@ are not coerced. Raw source values remain in the response archive. The schema
 defines integer activity fields, so fractional/float encodings there are flagged
 for review rather than rounded into integers.
 
-## Absence is not automatically missing data
+## Decision 1: zero-activity average nullability
+
+Our demo analysis policy accepts an explicit null `bavg_per_share` only when
+`bval == 0 AND blot == 0 AND bfreq == 0`. It accepts an explicit null
+`savg_per_share` only when `sval == 0 AND slot == 0 AND sfreq == 0`. These must be
+valid integer zeros, not booleans, numeric strings, missing fields, or nulls.
+Activity on the opposite side does not invalidate the exception.
+
+The raw null is always preserved, never converted to zero. Accepted instances
+are known provider/schema nullability deviations, not invalid rows. The analysis
+schema status is `VALID_WITH_KNOWN_PROVIDER_DEVIATION` when these are the only
+deviations, `VALID` when there are none, and `INVALID` when blocking findings
+remain. A null average with any nonzero same-side value, lots, or frequency is
+invalid. A missing average is still invalid. `navg_per_share` retains its existing
+finite-number check, including rejection of null; no new formula is inferred.
+
+## Decision 2: accept the active-broker population
 
 Sectors describes the population as active brokers. Under that contract, an
 inactive broker need not appear. Registry membership is not a requirement that
@@ -158,11 +185,41 @@ or inserting zero rows.
 For each absent broker, the response has no activity-zero/missing-data marker.
 It cannot independently prove inactivity instead of an upstream omission. Nor
 does today's observed registry establish historical membership. The report labels
-the endpoint population `ACTIVE_BROKERS_ONLY`, but retains
-`ABSENCE_SEMANTICS_UNRESOLVED` for individual absent brokers. An empty response
-also cannot distinguish inactivity from unavailable data.
+the endpoint population `ACTIVE_BROKERS_ONLY` and the policy status
+`ACTIVE_BROKER_CONTRACT_ACCEPTED`. Absent current-registry brokers remain listed
+in `registry_brokers_absent` as `NOT_OBSERVED_PRESUMED_INACTIVE` for this symbol-day.
+Absence alone does not fail qualification or produce a blocking
+`ABSENCE_SEMANTICS_UNRESOLVED`. No synthetic zero rows or activity values are
+created. `zero_activity_proven: false` and the historical-membership caveat remain
+informational. An empty response still fails demo operational qualification.
 
-## Reconciliation and completeness decision
+## Decision 3: operational versus externally proven completeness
+
+`operational_completeness: PASS`, `safe_for_demo_analysis: true`, and
+`qualification_status: OPERATIONALLY_COMPLETE` require all of the following:
+
+- HTTP 200, correct requested symbol/start/end identity, exactly the expected
+  trading-day group, and a nonempty response.
+- Unique broker codes with no unknown codes against the current real registry.
+- Valid required activity numeric fields and schema, allowing only Decision 1's
+  explicit zero-activity side-average null pattern.
+- Passing documented per-row `nval = bval - sval` and `nlot = blot - slot` checks.
+- Passing reviewed trading-calendar and real-registry prerequisites.
+
+`operational_checks` records each check as `PASS` or `FAIL`. Any failed check sets
+`operational_completeness: FAIL`, `safe_for_demo_analysis: false`, and
+`qualification_status: INVALID`. The CLI checks the real registry's snapshot
+ledger and rejects synthetic/empty registry databases before acquisition. Test
+fixtures can simulate real-source provenance; synthetic observations remain
+explicitly labeled and are not evidence about the market.
+
+Neither aggregate buy=sell equality nor an independent stock-day control is a
+hard requirement for this demo policy. `external_reconciliation: NOT_EVALUATED`
+remains in place until a trusted control with matching scope exists.
+`safe_to_call_complete` and `externally_proven_complete` remain false: this
+implementation cannot certify market-wide completeness. Upstream coverage,
+market/session scope, historical membership, and independent reconciliation
+remain unproven externally even when demo operational checks pass.
 
 Each check has its own result and evidence basis:
 
@@ -191,8 +248,10 @@ partial or unavailable comparison. Unknown codes are not silently removed.
 
 Reason codes include `EMPTY_RESPONSE`, `SCHEMA_INVALID`, `DUPLICATE_BROKER`,
 `UNKNOWN_BROKER`, `INVALID_NUMERIC_FIELD`, `RECONCILIATION_FAILED`,
-`COVERAGE_UNRESOLVED`, `ABSENCE_SEMANTICS_UNRESOLVED`, and prerequisite/provenance
-errors. Synthetic observations are visibly marked `SYNTHETIC_OBSERVATION`.
+`EXPECTED_TRADING_DAY_GROUP_MISSING_OR_INVALID`, and prerequisite/provenance
+errors. `KNOWN_NULLABILITY_DEVIATION` and `COVERAGE_UNRESOLVED` are informational,
+not operational blockers. Synthetic observations are visibly marked
+`SYNTHETIC_OBSERVATION`.
 
 This experiment cannot issue `COMPLETE` merely because the response is nonempty,
 all codes match, or buys equal sells. With the currently available API contract,

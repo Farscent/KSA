@@ -211,8 +211,8 @@ def inspect_schema(payload, *, start=TRADE_DATE, end=TRADE_DATE, allowed_dates=N
                    multiple_dates=False, group_indices=None) -> tuple[dict, list, bool]:
     """Strict documented schema; range callers supply identity and reviewed dates.
 
-    Nullability is never relaxed here. The range qualifier separately records
-    conditional zero-side compatibility, retaining these original findings.
+    Nullability is never relaxed here. Qualifiers apply their analysis policies
+    separately, retaining these original findings.
     """
     allowed_dates = {TRADE_DATE} if allowed_dates is None else set(allowed_dates)
     findings = {"schema_findings": [], "null_required_fields": [], "missing_required_fields": [],
@@ -366,7 +366,7 @@ def activity_observations(rows: list) -> dict:
 def qualify(directory: Path, registry: dict, evidence: dict) -> dict:
     meta, body = load_observation(directory)
     calendar = calendar_check(evidence)
-    report = {"report_version": "daily-qualification-v1", "generated_at": now_utc(),
+    report = {"report_version": "daily-qualification-v2", "generated_at": now_utc(),
               "requested_symbol": SYMBOL, "requested_trade_date": TRADE_DATE,
               "observation": meta, "calendar": calendar, "registry_provenance": registry,
               "registry_broker_count": len(registry["broker_codes"]),
@@ -377,7 +377,8 @@ def qualify(directory: Path, registry: dict, evidence: dict) -> dict:
               "units": {"bval/sval/nval": "IDR", "blot/slot/nlot": "lots",
                         "bfreq/sfreq": "frequency counts; counting convention unspecified",
                         "bavg_per_share/savg_per_share/navg_per_share": "per-share averages; IDR/share inferred from value currency; net-average definition and rounding unspecified"},
-              "api_evidence": evidence["api"], "reason_codes": [], "safe_to_call_complete": False}
+              "api_evidence": evidence["api"], "reason_codes": [], "safe_to_call_complete": False,
+              "externally_proven_complete": False, "external_reconciliation": "NOT_EVALUATED"}
     reasons = report["reason_codes"]
     if not calendar["scheduled_trading_date"]:
         reasons.append("TRADING_DATE_NOT_VERIFIED")
@@ -394,12 +395,36 @@ def qualify(directory: Path, registry: dict, evidence: dict) -> dict:
         except RegistryError as exc:
             payload, rows, measurable = None, [], False
             report["schema_findings"].append({"path": "$", "reason": str(exc).split(":", 1)[0]})
+    # Preserve the documented findings and raw nulls; only the reviewed same-side
+    # zero-activity exception is nonfatal for this single-day demo policy.
+    report["activity_observations"] = activity_observations(rows)
+    report["known_provider_deviations"] = []
+    for path, row in rows:
+        if not isinstance(row, dict):
+            continue
+        for side in ("b", "s"):
+            average = side + "avg_per_share"
+            if (average in row and row[average] is None and all(
+                    type(row.get(side + field)) is int and row[side + field] == 0
+                    for field in ("val", "lot", "freq"))):
+                report["known_provider_deviations"].append({
+                    "path": f"{path}.{average}", "broker_code": row.get("broker_code"),
+                    "status": "KNOWN_NULLABILITY_DEVIATION",
+                    "basis": "Explicit null average with valid same-side value, lots and frequency all zero; raw null preserved.",
+                })
+    accepted_paths = {item["path"] for item in report["known_provider_deviations"]}
+    report["documented_schema_findings"] = report["schema_findings"]
+    report["schema_findings"] = [item for item in report["schema_findings"]
+        if not (item["reason"] == "NULL_REQUIRED_FIELD" and item["path"] in accepted_paths)]
+    if accepted_paths:
+        reasons.append("KNOWN_NULLABILITY_DEVIATION")
     if report["schema_findings"]:
         reasons.append("SCHEMA_INVALID")
     if report["invalid_numeric_fields"]:
         reasons.append("INVALID_NUMERIC_FIELD")
     report["schema_status"] = ("NOT_EVALUATED" if meta["http_status"] != 200 else
-                               "INVALID" if report["schema_findings"] or report["invalid_numeric_fields"] else "VALID")
+                               "INVALID" if report["schema_findings"] or report["invalid_numeric_fields"] else
+                               "VALID_WITH_KNOWN_PROVIDER_DEVIATION" if accepted_paths else "VALID")
     if report["response_row_count"] == 0:
         reasons.append("EMPTY_RESPONSE")
     codes = [row["broker_code"] for _, row in rows if isinstance(row, dict)
@@ -422,18 +447,16 @@ def qualify(directory: Path, registry: dict, evidence: dict) -> dict:
     if report["unknown_broker_codes"]:
         reasons.append("UNKNOWN_BROKER")
     report["reconciliation_checks"] = reconciliation(rows, report, measurable, report["duplicate_broker_codes"])
-    report["activity_observations"] = activity_observations(rows)
     if any(check["status"] == "FAIL" for check in report["reconciliation_checks"]):
         reasons.append("RECONCILIATION_FAILED")
+    report["population_status"] = "ACTIVE_BROKER_CONTRACT_ACCEPTED"
     report["absence_semantics"] = {
         "documented_population": "ACTIVE_BROKERS_ONLY",
         "inference": "Under the documented contract, zero-activity brokers need not appear.",
-        "individual_absent_broker_status": "UNRESOLVED",
+        "individual_absent_broker_status": "NOT_OBSERVED_PRESUMED_INACTIVE",
         "zero_activity_proven": False,
-        "reason": "No per-broker zero-activity or missing-data indicator; current registry membership is not historical membership.",
+        "reason": "Demo policy accepts the active-broker contract without inventing activity or rows. Current registry membership does not prove historical membership.",
     }
-    if report["registry_brokers_absent"] or report["response_row_count"] is None:
-        reasons.append("ABSENCE_SEMANTICS_UNRESOLVED")
     reasons.append("COVERAGE_UNRESOLVED")
     report["unproven"] = [
         "Actual response covers every active broker without upstream omission or truncation.",
@@ -441,9 +464,40 @@ def qualify(directory: Path, registry: dict, evidence: dict) -> dict:
         "Meaning of each absent current-registry broker on the historical trading date.",
         "Historical registry membership/cohorts and any exceptional closure or BBCA suspension.",
     ]
-    errors = {"SCHEMA_INVALID", "INVALID_NUMERIC_FIELD", "DUPLICATE_BROKER", "UNKNOWN_BROKER", "RECONCILIATION_FAILED"}
-    report["qualification_status"] = "INVALID" if errors.intersection(reasons) or meta["http_status"] != 200 else "UNRESOLVED"
-    report["conclusion"] = "Not safe to call COMPLETE: HTTP success and internal arithmetic alone do not prove full stock-day coverage."
+    # run() obtains this provenance through current_registry(), which checks the
+    # whole snapshot ledger read-only. Also reject absent/synthetic prerequisites
+    # when the qualifier is invoked directly (e.g. by an offline test).
+    registry_ok = (bool(registry["broker_codes"])
+        and len(registry["broker_codes"]) == len(set(registry["broker_codes"]))
+        and registry.get("latest_applied_snapshot", {}).get("source") in {"live", "local"})
+    report["registry_status"] = "PASS" if registry_ok else "FAIL"
+    if not registry_ok:
+        reasons.append("REAL_REGISTRY_REQUIRED")
+    expected_day = report.get("response_dates") == [TRADE_DATE]
+    if meta["http_status"] == 200 and not expected_day:
+        reasons.append("EXPECTED_TRADING_DAY_GROUP_MISSING_OR_INVALID")
+    checks = {
+        "http_200": meta["http_status"] == 200,
+        "response_identity": isinstance(payload, dict) and all(payload.get(field) == expected
+            for field, expected in (("symbol", "BBCA.JK"), ("start", TRADE_DATE), ("end", TRADE_DATE))),
+        "expected_trading_day_group": expected_day,
+        "nonempty_response": report["response_row_count"] is not None and report["response_row_count"] > 0,
+        "unique_broker_codes": not report["duplicate_broker_codes"],
+        "known_broker_codes": not report["unknown_broker_codes"],
+        "analysis_schema": report["schema_status"] in {"VALID", "VALID_WITH_KNOWN_PROVIDER_DEVIATION"},
+        "row_net_value": report["reconciliation_checks"][0]["status"] == "PASS",
+        "row_net_lots": report["reconciliation_checks"][1]["status"] == "PASS",
+        "reviewed_trading_calendar": calendar["scheduled_trading_date"],
+        "real_registry": registry_ok,
+    }
+    report["operational_checks"] = {name: "PASS" if passed else "FAIL" for name, passed in checks.items()}
+    report["safe_for_demo_analysis"] = all(checks.values())
+    report["operational_completeness"] = "PASS" if report["safe_for_demo_analysis"] else "FAIL"
+    report["qualification_status"] = "OPERATIONALLY_COMPLETE" if report["safe_for_demo_analysis"] else "INVALID"
+    report["conclusion"] = (
+        "Safe for demo analysis under the accepted operational policy. " if report["safe_for_demo_analysis"] else
+        "Not safe for demo analysis: operational prerequisites or data checks failed. "
+    ) + "External market-wide completeness remains unproven; no trusted matching-scope independent control exists."
     return report
 
 
