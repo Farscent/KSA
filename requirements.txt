@@ -1,0 +1,2 @@
+# Live HTTP transport and its regression tests; offline replay uses only stdlib.
+requests>=2.32.3,<3
