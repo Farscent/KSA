@@ -1,39 +1,58 @@
 # One-stock-day completeness handoff
 
 Owner: Farhan for evidence and ingestion; share the resulting data contract and
-unresolved gaps with Harfi. No symbol or end date has been selected. Complete this
-gate before a full backfill or production scorer.
+unresolved gaps with Harfi. The selected pilot is exactly BBCA / 2026-09-09.
+The agreed demo policy below does not approve a backfill or production scorer.
+See [daily qualification](daily-qualification.md) for archived evidence and replay.
 
-- [ ] Agree one symbol and exchange trading date, API access/budget, and fixed
-  market scope. Record market/board/session inclusion, timezone and date boundaries.
-- [ ] Obtain and archive daily broker observations, with endpoint, exact query
-  scope (no secrets), retrieval time, status, and unchanged response body. Use a
-  daily endpoint, not date-range totals. Record pagination/caps and prove every
-  required page was exhausted without hidden truncation.
-- [ ] Demonstrate unique `symbol × trade_date × broker_code` rows. Distinguish
-  confirmed zero activity from missing/unavailable observations. Establish how
-  holidays, suspensions, late arrivals, and revised data are represented.
-- [ ] Verify consistent buy/sell units, currency, value scaling, and whether volumes
-  mean shares or lots. Require nonnegative gross values and check each row's supplied
-  net against `buy_value - sell_value`. Record precision and rounding conventions.
-- [ ] Establish the appropriate full active broker universe from provider evidence
-  and independent controls where available. Include institutional, retail, mixed,
-  and unknown intermediaries. Flag unmatched registry codes and missing historical
-  classifications without dropping their trades. Registry membership shares do not
-  prove trading coverage; inactivity cannot be inferred from an unexplained omission.
-- [ ] Reconcile total buys and total sells and total net flow against zero, then
-  compare both gross sides to a trusted stock-day turnover/control total in exactly
-  the same scope. Resolve one-sided versus two-sided turnover definitions. Document
-  any rounding tolerance and its justification; balanced incomplete subsets can
-  still pass a zero-sum check, so reconciliation alone is insufficient.
-- [ ] Save a concise evidence report listing checks, counts, discrepancies, missing
-  brokers/dates, source lineage, and unresolved gaps. Agree coverage acceptance and
-  classification-history treatment before marking the day complete. Do not extend
-  one day's result into a claim about availability of 65 dates or ten symbols.
+## Demo operational gate
 
-A top-N buyer/seller response is not a complete broker universe. Do not infer all
-net-selling magnitudes or the institutional activity denominator from rankings.
-The [documented per-symbol daily endpoint](https://docs.sectors.app/api-references/v2/indonesia/brokers/broker-summary-by-symbol)
-is a candidate source for this experiment, but its description does not replace
-the checks above. Once the one-day evidence passes, implement the validated daily
-input contract and only then plan a quota-aware historical ingestion milestone.
+The existing BBCA observation passes all of these checks:
+
+- [x] HTTP 200, correct symbol and requested dates, expected trading-day group,
+  and a nonempty response. Preserve original body bytes and provenance.
+- [x] Unique broker codes, no unknown codes, and a real current registry
+  prerequisite: 76 returned brokers against 88 registered brokers.
+- [x] Required activity fields have valid numeric types and values; documented
+  per-row `nval = bval - sval` and `nlot = blot - slot` pass for all 76 rows.
+- [x] Decision 1: accept null `bavg_per_share` only with `bval`, `blot`, and
+  `bfreq` all valid integer zeros; accept null `savg_per_share` only with `sval`,
+  `slot`, and `sfreq` all valid integer zeros. Preserve the null, never coerce it
+  to zero. Any same-side activity, malformed value, or missing field remains
+  invalid. Keep existing `navg_per_share` checks without inventing a formula.
+- [x] Record the observed provider/schema deviation: 25 accepted side-average
+  nulls (1 buy, 24 sell), with `VALID_WITH_KNOWN_PROVIDER_DEVIATION`.
+- [x] Decision 2: accept the documented `ACTIVE_BROKERS_ONLY` population with
+  `population_status: ACTIVE_BROKER_CONTRACT_ACCEPTED`. Keep all 12 absent codes
+  in `registry_brokers_absent`, treated as not observed / presumed inactive for
+  this symbol-day. Absence alone is not failure. Never synthesize rows or activity.
+- [x] Reviewed trading-calendar prerequisite passes. Retain the caveat about
+  exceptional closures and symbol suspensions.
+- [x] Decision 3: report `operational_completeness: PASS`,
+  `safe_for_demo_analysis: true`, and `OPERATIONALLY_COMPLETE`; offline replay
+  exits 0. Failed operational checks produce `FAIL`, false, and exit 1.
+
+Aggregate buy/sell equality is descriptive only, not a hard completeness rule:
+common market/session scope and frequency conventions have not been established.
+An independent stock-day control is not required for this demo gate.
+
+## Claims still unproven externally
+
+- [ ] Establish market/board/session scope, timezone/date boundaries, pagination,
+  caps, and evidence against upstream omissions or hidden truncation.
+- [ ] Obtain a trusted stock-day control with matching scope and units and resolve
+  one-sided versus two-sided turnover definitions. Until then,
+  `external_reconciliation: NOT_EVALUATED`. Balanced subsets alone do not prove
+  full market-wide coverage.
+- [ ] Establish historical broker membership and classification treatment. The
+  current registry does not prove membership on the trade date, and presumed
+  inactivity is not independently proven zero activity.
+- [ ] Establish exceptional closures, suspensions, late arrivals, and revision
+  semantics before broader historical ingestion.
+
+`safe_to_call_complete: false` and `externally_proven_complete: false` remain in
+the passing BBCA report. `COVERAGE_UNRESOLVED` is informational for demo analysis.
+The observed provider deviation, our acceptance policy, and externally unproven
+claims are separate findings. Do not extrapolate one day's result to 65 dates or
+ten symbols. This change adds no scoring, serving tables, synthetic activity,
+multi-symbol ingestion, or network requests.
