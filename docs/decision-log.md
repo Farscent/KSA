@@ -89,6 +89,15 @@ before planning calls; do not extrapolate quota from the documented range.
 | Missing registry broker | Retain current version and report absence. Disappearance is not an approved deletion/closure signal. |
 | Provenance isolation | Synthetic snapshots cannot mix with real/local observations in one database. |
 
+## Frozen demo scope
+
+Following acceptance of the BBCA one-day milestone, the user froze the demo
+universe and fixed end date with an initial trading-day lookback target. The
+[configuration](../sectors/demo-scope.json) is the single runtime source; see
+[demo scope](demo-scope.md) for the approved values and verified-calendar
+prerequisite. This milestone makes no network requests and does not implement
+ingestion, scoring, serving tables, or frontend work.
+
 ## Proposed and pending decisions
 
 | Topic | Status | Evidence or decision still required |
@@ -99,10 +108,10 @@ before planning calls; do not extrapolate quota from the documented range.
 | Severity formula | Pending | Agree formula, scale, nullability, and interpretation. |
 | Coverage policy | Demo policy agreed; external proof pending | Apply the three decisions above for one-day demo analysis; establish matching-scope independent evidence before claiming market-wide completeness. |
 | Missing-day persistence | Pending | Decide whether/how incomplete days invalidate the five-day result; no silent omission or imputation. |
-| API access/quota | Partially verified; quota pending | A live unfiltered registry request succeeded on 2026-09-11. Available quota/credits, renewal period, and access to required daily endpoints remain unverified. |
+| API access/quota | Grant recorded; consumption pending | 1,000 hackathon team credits according to official competition rules, as supplied by the user. No independent rules/account check in this milestone; actual endpoint credit consumption, remaining balance, and rate limits remain to be confirmed. |
 | Request limits | Pending | Confirm account rate/concurrency limits, pagination/caps, allowed range semantics, and retry budget before backfill planning. |
-| Ten demo symbols | Pending | User-selected or explicitly approved ten-symbol list; none supplied or invented. |
-| End date | Fixed for one-day experiment; broader demo pending | User selected BBCA / 2026-09-09 for qualification only. This does not select the ten-symbol demo's end date. |
+| Ten demo symbols | Frozen | User-approved list in the [demo configuration](../sectors/demo-scope.json). |
+| End date and initial lookback | Frozen target; calendar resolution pending | Fixed values in the demo configuration; resolve the range from verified IDX trading dates, not naive weekdays. |
 | Daily completeness | OPERATIONALLY_COMPLETE; external proof pending | The [one-day result](daily-qualification.md) is safe for demo analysis under the accepted nullability and active-population policy. Market/session scope, upstream completeness, historical membership and an independent control remain unproven. |
 | Classification history | Pending | Establish whether dated effective classifications exist, first reliable observation, treatment before that time, and trade-date/as-of timestamp mapping. Observed current data is not historical truth. |
 | Exchange calendar | Pending | Establish authoritative trading dates, sessions/timezone, holidays, suspensions, and missing-vs-zero activity semantics. |
