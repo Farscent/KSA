@@ -1,0 +1,34 @@
+{
+  "contract_version": "1.0.0-draft.1",
+  "contract_status": "UNDER_REVIEW",
+  "output": "serve_alert",
+  "data_kind": "SYNTHETIC_EXAMPLE",
+  "description": "Hand-written BBCA contract example only. Qualification illustrates the accepted demo policy; no scoring was run and this is not an actual alert.",
+  "records": [
+    {
+      "symbol": "BBCA",
+      "trade_date": "2026-09-09",
+      "signal_state": "NOT_EVALUATED",
+      "score": null,
+      "severity": null,
+      "scoring_status": "PENDING_DEFINITION",
+      "reason_codes": ["SCORING_NOT_DEFINED", "SEVERITY_NOT_DEFINED"],
+      "summary": "Example only: demo data qualification can pass while scoring and severity remain undefined.",
+      "qualification": {
+        "operational_completeness": "PASS",
+        "safe_for_demo_analysis": true,
+        "schema_status": "VALID_WITH_KNOWN_PROVIDER_DEVIATION",
+        "population_status": "ACTIVE_BROKER_CONTRACT_ACCEPTED",
+        "external_reconciliation": "NOT_EVALUATED",
+        "externally_proven_complete": false,
+        "reason_codes": ["KNOWN_NULLABILITY_DEVIATION", "COVERAGE_UNRESOLVED"]
+      },
+      "evidence_ids": [
+        "example-bbca-20260909-institutional",
+        "example-bbca-20260909-retail",
+        "example-bbca-20260909-mixed",
+        "example-bbca-20260909-unknown"
+      ]
+    }
+  ]
+}

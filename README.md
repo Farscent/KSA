@@ -3,6 +3,8 @@
 The broker registry foundation, `dim_broker` SCD2, and BBCA one-day qualification
 are complete. The demo universe is now frozen in a single checked-in
 [configuration](sectors/demo-scope.json); see [demo scope](docs/demo-scope.md).
+The first versioned [serving contract](docs/serve-contract.md),
+`1.0.0-draft.1`, is now under review with Harfi, with example-only JSON fixtures.
 
 ### What has been implemented
 
@@ -23,6 +25,7 @@ The implementation currently supports:
 * Explicit live fetching with bounded retries and caching
 * Accepted BBCA one-day qualification under the demo operational policy
 * Offline loading and validation of the frozen demo universe configuration
+* Draft `serve_alert` / `serve_alert_evidence` contract and deterministic fixture validation
 
 ### Verification completed
 
@@ -87,8 +90,8 @@ which is consistent with exactly one broker changing classification from institu
 | Demo universe and fixed end date              | Frozen; [scope and initial lookback](docs/demo-scope.md) |
 | API credit grant                             | 1,000 hackathon team credits according to official competition rules, as supplied in the project decision |
 | Endpoint credit consumption and rate limits   | Pending confirmation; not independently established |
-| Freeze `serve_*` schema with Harfi            | Pending                                     |
-| Create `serve_alert_evidence.json` fixture    | Pending                                     |
+| `serve_*` contract with Harfi                 | Under review: `1.0.0-draft.1`; not yet stable |
+| `serve_alert.json` / `serve_alert_evidence.json` fixtures | Complete: hand-written synthetic contract examples; no actual scored output |
 | Multi-stock ingestion                        | Pending                                     |
 | Scoring                                      | Pending                                     |
 | Connect application / Run Scan flow           | Pending                                     |
@@ -116,8 +119,8 @@ With the demo universe frozen, the next steps are:
 1. Use the accepted BBCA demo qualification policy; obtain matching-scope evidence before claiming external completeness.
 2. Confirm endpoint credit consumption, available balance, and practical API rate limits.
 3. Resolve the initial lookback from verified IDX trading dates.
-4. Agree on the stable `serve_*` schema with the application side.
-5. Create deterministic serving fixtures.
+4. Review the draft `serve_*` contract and deterministic examples with Harfi.
+5. Agree scoring semantics, historical cohort mapping, and publication/freshness behavior before stabilizing the contract.
 6. Build market-data ingestion and raw persistence.
 7. Implement scoring on top of the verified ingestion foundation.
 
@@ -132,8 +135,10 @@ uses Python 3.10+, SQLite, and `unittest`. Offline replay requires only the stan
 library. Live HTTP transport and its tests use `requests`. Verified here on Python 3.13.
 
 Farhan owns ingestion and deterministic scoring. Harfi's future application will
-consume agreed, stable `serve_*` results. This milestone does not create scoring
-results or an application contract before their pending definitions are resolved.
+consume agreed, stable `serve_*` results. The proposed application fields are now
+documented for review, independently of raw tables. `signal_state` remains
+`NOT_EVALUATED`, and `score`/`severity` remain null with pending reason codes until
+their definitions are agreed. No production scoring results are created.
 
 ## Offline checks and replay
 
