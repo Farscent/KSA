@@ -1,0 +1,39 @@
+{
+  "contract_version": "1.2.0-draft.1",
+  "contract_status": "UNDER_REVIEW",
+  "output": "serve_price_history",
+  "data_kind": "SYNTHETIC_EXAMPLE",
+  "description": "Hand-written daily close window illustrating the 1.2.0-draft.1 shape. BBCA carries a full four-session run; ANTM is deliberately missing 2026-09-08 so the gap path — a break in the series, never a zero-filled session — is exercised by fixture data rather than assumed; MDKA is UNAVAILABLE with no points at all. Real batch output carries data_kind MEASURED instead.",
+  "records": [
+    {
+      "symbol": "BBCA",
+      "points": [
+        { "trade_date": "2026-09-04", "close": 9050, "volume": 41230500 },
+        { "trade_date": "2026-09-07", "close": 9100, "volume": 38940100 },
+        { "trade_date": "2026-09-08", "close": 9125, "volume": 44120800 },
+        { "trade_date": "2026-09-09", "close": 9175, "volume": 51003200 }
+      ],
+      "currency": "IDR",
+      "value_status": "AVAILABLE",
+      "reason_codes": []
+    },
+    {
+      "symbol": "ANTM",
+      "points": [
+        { "trade_date": "2026-09-04", "close": 1795, "volume": 88210400 },
+        { "trade_date": "2026-09-07", "close": 1820, "volume": 91550300 },
+        { "trade_date": "2026-09-09", "close": 1850, "volume": null }
+      ],
+      "currency": "IDR",
+      "value_status": "AVAILABLE",
+      "reason_codes": []
+    },
+    {
+      "symbol": "MDKA",
+      "points": [],
+      "currency": "IDR",
+      "value_status": "UNAVAILABLE",
+      "reason_codes": ["PRICE_NOT_YET_INGESTED"]
+    }
+  ]
+}
