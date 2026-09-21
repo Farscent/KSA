@@ -1,0 +1,21 @@
+{
+  "contract_version": "1.1.0-draft.1",
+  "contract_status": "UNDER_REVIEW",
+  "output": "serve_run",
+  "data_kind": "SYNTHETIC_EXAMPLE",
+  "description": "Hand-written run-provenance example only. One run covering the frozen ten-symbol demo universe on the frozen trade date; the 20-session window is what the frozen lookback actually supplies, not the eventual 60-session baseline.",
+  "records": [
+    {
+      "data_date": "2026-09-10",
+      "trade_date": "2026-09-09",
+      "window": {
+        "sessions": 20,
+        "start": "2026-08-13",
+        "end": "2026-09-09"
+      },
+      "symbols_requested": 10,
+      "symbols_matched": 10,
+      "cohorts_unavailable": 1
+    }
+  ]
+}

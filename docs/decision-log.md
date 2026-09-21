@@ -150,3 +150,38 @@ Run Scan must not initiate live Sectors requests.
 | Completeness pilot symbol | Confirmed | BBCA — selected as the first high-liquidity stock for daily broker-data qualification. |
 | Completeness pilot date | Confirmed | 2026-09-09 — selected as a completed historical weekday with buffer from the latest session. Exchange-session validity must still be checked explicitly by the completeness workflow. |
 | Completeness pilot scope | Confirmed | Exactly 1 symbol × 1 trade date. No backfill or scoring during this experiment. |
+
+## Frontend design import — 2026-09-20
+
+The Sectors Review Prototype design project (`claude.ai/design/p/0f176895-dd41-49f2-bc21-0364c023ad59`,
+file `Sectors Review Prototype.dc.html`) was imported and used to plan the Next.js
+frontend build. It resolves several previously open product questions. Four
+decisions were made in reconciling it against the frozen scope and `CLAUDE.md`:
+
+1. **Universe** — the prototype's own symbol list (14 tickers, including out-of-scope
+   BBTN/UNVR/ADRO/PGAS/KLBF/SMGR and missing BMRI/MDKA) is **not** authoritative.
+   The frontend is aligned to the frozen ten in `sectors/demo-scope.json`. The
+   prototype's second flagged demo stock (BBTN) is replaced with an in-scope symbol.
+   `sectors/demo-scope.json` itself is not re-frozen.
+2. **Contract surface** — `1.0.0-draft.1` does not carry price, sector, company name,
+   coverage percentage, component values, time series, or peer-screen data that the
+   design renders. Contract `1.1.0-draft.1` is being drafted (see
+   `docs/serve-contract-1.1.md`) as an additive extension — `1.0.0-draft.1` and its
+   fixtures/tests are untouched. The frontend is built against `1.1.0-draft.1` fixtures.
+3. **Portfolio valuation** — unrealized P&L, market value, a portfolio-value
+   sparkline, and a sector-exposure donut are new surface not previously specified
+   in `CLAUDE.md`. Kept, to be backed by real daily-close and sector data
+   (`fetch-daily-close`, `fetch-companies`) rather than left illustrative. These are
+   descriptive figures, not predictions, so the no-forecasting rule is unaffected.
+4. **Severity metrics** — the design defines concentration as CR3 (top-3 broker
+   share of sell value against a baseline share) and breadth as the count/share of
+   brokers that changed side, and states there is no combined severity score,
+   reporting components separately. This is adopted in place of `CLAUDE.md`'s prior
+   `seller_hhi` / `inst_sell_breadth` / "severity score" wording, which is amended
+   accordingly. `AGENTS.md` already required severity never be collapsed into one
+   opaque number, so this aligns the two documents rather than introducing a new rule.
+
+The frozen `lookback_trading_days: 20` does not supply the design's 60-session flow
+chart. This is not resolved by re-freezing the scope; `serve_run.window` in the new
+contract carries whatever window the batch actually produces (`sessions`, `start`,
+`end`), and the frontend renders that window as given, rather than assuming 60.
