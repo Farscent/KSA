@@ -5,9 +5,15 @@
  * ahead of them. Nothing here invents a field the Python contract doesn't have.
  */
 
-export type ContractVersion = "1.0.0-draft.1" | "1.1.0-draft.1";
+export type ContractVersion = "1.0.0-draft.1" | "1.1.0-draft.1" | "1.2.0-draft.1";
 export type ContractStatus = "UNDER_REVIEW";
-export type DataKind = "SYNTHETIC_EXAMPLE";
+/**
+ * `MEASURED` (1.2.0-draft.1) marks data ingested from the Sectors API by the
+ * Python batch, as opposed to the hand-written `SYNTHETIC_EXAMPLE` fixtures.
+ * It says the numbers were observed, not that they are complete — completeness
+ * remains `value_status` and `reason_codes`' job.
+ */
+export type DataKind = "SYNTHETIC_EXAMPLE" | "MEASURED";
 
 export interface Envelope<Output extends string, Record> {
   contract_version: ContractVersion;
@@ -116,6 +122,30 @@ export interface ServePositionRecord {
 }
 
 export type ServePositionEnvelope = Envelope<"serve_position", ServePositionRecord>;
+
+// ---- serve_price_history (1.2.0-draft.1) ----
+
+export interface PricePoint {
+  trade_date: string;
+  close: number;
+  /** Null when the provider omitted it; never a stand-in zero. */
+  volume: number | null;
+}
+
+export interface ServePriceHistoryRecord {
+  symbol: string;
+  /**
+   * Ascending by trade_date, no duplicates. Non-trading days and sessions the
+   * provider omitted are absent rather than zero-filled — a gap is an unknown,
+   * not a value.
+   */
+  points: PricePoint[];
+  currency: "IDR";
+  value_status: ValueStatus;
+  reason_codes: string[];
+}
+
+export type ServePriceHistoryEnvelope = Envelope<"serve_price_history", ServePriceHistoryRecord>;
 
 // ---- serve_components (1.1.0-draft.1) ----
 

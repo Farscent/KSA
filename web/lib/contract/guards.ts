@@ -14,6 +14,7 @@ import type {
   ServeFlowSeriesRecord,
   ServePeerScreenRecord,
   ServePositionRecord,
+  ServePriceHistoryRecord,
 } from "./types";
 
 export const MAX_EXACT_INTEGER = 9_007_199_254_740_991;
@@ -54,7 +55,12 @@ export function assertEnvelope<Output extends string, Rec>(
 ): void {
   assertTrue(envelope.output === output, `expected output "${output}", got "${envelope.output}"`);
   assertTrue(envelope.contract_status === "UNDER_REVIEW", "contract_status must be UNDER_REVIEW");
-  assertTrue(envelope.data_kind === "SYNTHETIC_EXAMPLE", "data_kind must be SYNTHETIC_EXAMPLE");
+  // 1.2.0-draft.1 added MEASURED for batch-ingested data. Requiring
+  // SYNTHETIC_EXAMPLE here would reject every real payload.
+  assertTrue(
+    envelope.data_kind === "SYNTHETIC_EXAMPLE" || envelope.data_kind === "MEASURED",
+    "data_kind must be SYNTHETIC_EXAMPLE or MEASURED"
+  );
   assertTrue(Boolean(envelope.description?.trim()), "description must be nonempty");
   assertTrue(Array.isArray(envelope.records), "records must be an array");
 }
@@ -114,6 +120,32 @@ export function assertPosition(row: ServePositionRecord): void {
   } else {
     assertTrue(row.close === null && row.close_date === null,
       "UNAVAILABLE position must have null close/close_date — never render as Rp 0");
+  }
+}
+
+export function assertPriceHistory(row: ServePriceHistoryRecord): void {
+  assertTrue(DEMO_SYMBOLS.has(row.symbol), "symbol must be in the frozen demo universe");
+  assertTrue(row.currency === "IDR", "currency must be IDR");
+  assertTrue(Array.isArray(row.points), "points must be an array");
+  if (row.value_status === "AVAILABLE") {
+    assertTrue(row.points.length > 0, "AVAILABLE price history must have at least one point");
+    assertTrue(row.reason_codes.length === 0, "AVAILABLE price history must have empty reason_codes");
+  } else {
+    assertTrue(row.points.length === 0, "UNAVAILABLE price history must have no points");
+  }
+  let previous = "";
+  for (const point of row.points) {
+    assertTrue(isIsoDate(point.trade_date), "price point must have an ISO trade_date");
+    assertTrue(point.trade_date > previous, "price points must be ascending with no duplicate dates");
+    previous = point.trade_date;
+    assertTrue(
+      Number.isInteger(point.close) && point.close > 0,
+      "price point close must be a positive integer — a missing session is omitted, never zero"
+    );
+    assertTrue(
+      point.volume === null || (Number.isInteger(point.volume) && point.volume >= 0),
+      "price point volume must be a nonnegative integer or null"
+    );
   }
 }
 

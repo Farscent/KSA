@@ -1,15 +1,18 @@
 /**
- * The only module in this app that knows where contract data comes from.
- * Backed today by the synced fixtures in web/fixtures/ (see
- * scripts/sync-fixtures.mjs). When real scored output lands in Supabase,
- * only this file changes — every screen and component calls these functions,
- * never a fixture path directly.
+ * The fixture-backed half of the contract data seam.
+ *
+ * Outputs the Python batch already produces are read from Supabase by
+ * `lib/data/results.ts` and distributed through `lib/data/ResultsProvider.tsx`.
+ * `serve_position` and `serve_price_history` moved there when real daily close
+ * ingestion landed. Everything below is still awaiting a real scoring engine
+ * and remains backed by the synced fixtures in web/fixtures/ (see
+ * scripts/sync-fixtures.mjs); each one moves across as the batch starts
+ * producing it, and no screen imports a fixture path directly.
  *
  * Per AGENTS.md: this is a reads-only seam, and it never calls the Sectors
  * API. Nothing here performs a network fetch to an external provider.
  */
 import runEnvelope from "@/fixtures/serve_run_v11.json";
-import positionEnvelope from "@/fixtures/serve_position_v11.json";
 import alertEnvelope from "@/fixtures/serve_alert_v11.json";
 import evidenceEnvelope from "@/fixtures/serve_alert_evidence_v11.json";
 import componentsEnvelope from "@/fixtures/serve_components_v11.json";
@@ -24,7 +27,6 @@ import {
   assertEvidence,
   assertFlowSeries,
   assertPeerScreen,
-  assertPosition,
 } from "@/lib/contract/guards";
 import type {
   Cohort,
@@ -40,14 +42,11 @@ import type {
   ServeNarrativeRecord,
   ServePeerScreenEnvelope,
   ServePeerScreenRecord,
-  ServePositionEnvelope,
-  ServePositionRecord,
   ServeRunEnvelope,
   ServeRunRecord,
 } from "@/lib/contract/types";
 
 const run = runEnvelope as unknown as ServeRunEnvelope;
-const positions = positionEnvelope as unknown as ServePositionEnvelope;
 const alerts = alertEnvelope as unknown as ServeAlertEnvelope;
 const evidence = evidenceEnvelope as unknown as ServeAlertEvidenceEnvelope;
 const components = componentsEnvelope as unknown as ServeComponentsEnvelope;
@@ -59,8 +58,6 @@ let validated = false;
 function validateOnce(): void {
   if (validated) return;
   assertEnvelope(run, "serve_run");
-  assertEnvelope(positions, "serve_position");
-  positions.records.forEach(assertPosition);
   assertEnvelope(alerts, "serve_alert");
   alerts.records.forEach(assertAlert);
   assertEnvelope(evidence, "serve_alert_evidence");
@@ -78,16 +75,6 @@ function validateOnce(): void {
 export function getRun(): ServeRunRecord {
   validateOnce();
   return run.records[0];
-}
-
-export function getPositions(): ServePositionRecord[] {
-  validateOnce();
-  return positions.records;
-}
-
-export function getPosition(symbol: string): ServePositionRecord | undefined {
-  validateOnce();
-  return positions.records.find((r) => r.symbol === symbol);
 }
 
 export function getAlerts(): ServeAlertRecord[] {
