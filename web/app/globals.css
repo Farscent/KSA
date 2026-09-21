@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens ported from the imported "Sectors Review Prototype" design
+ * project. The design is light-only and commits to one look, so unlike the
+ * create-next-app template this deliberately does not define a
+ * prefers-color-scheme dark palette — see docs/decision-log.md.
+ */
+:root {
+  --color-paper: #eceae5;
+  --color-surface: #f7f6f3;
+  --color-card: #ffffff;
+  --color-ink: #15191e;
+  --color-accent: #2f5670;
+  --color-accent-soft: #eef2f5;
+  --color-muted: #7b8492;
+  --color-muted-2: #9aa2ac;
+  --color-line: #dcd9d3;
+  --color-line-soft: #f0eeea;
+  --color-line-strong: #e4e2dd;
+  --color-input-border: #d5d2cc;
+  --color-warn: #8a5a1e;
+  --color-warn-bg: #fbf7ee;
+  --color-warn-border: #c4a86a;
+  --color-header: #15191e;
+  --color-header-muted: #8f9aa6;
+  --color-header-fg: #f3f2ef;
+
+  --sector-1: #2f5670;
+  --sector-2: #5a86a0;
+  --sector-3: #8aa8bc;
+  --sector-4: #a9bccb;
+  --sector-5: #c4d0da;
+  --sector-6: #d9e0e6;
+
+  --font-family-sans: var(--font-ibm-plex-sans), system-ui, sans-serif;
+  --font-family-mono: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  --font-family-serif: var(--font-ibm-plex-serif), Georgia, serif;
+}
+
+@theme inline {
+  --color-paper: var(--color-paper);
+  --color-surface: var(--color-surface);
+  --color-card: var(--color-card);
+  --color-ink: var(--color-ink);
+  --color-accent: var(--color-accent);
+  --color-accent-soft: var(--color-accent-soft);
+  --color-muted: var(--color-muted);
+  --color-muted-2: var(--color-muted-2);
+  --color-line: var(--color-line);
+  --color-line-soft: var(--color-line-soft);
+  --color-line-strong: var(--color-line-strong);
+  --color-input-border: var(--color-input-border);
+  --color-warn: var(--color-warn);
+  --color-warn-bg: var(--color-warn-bg);
+  --color-warn-border: var(--color-warn-border);
+  --color-header: var(--color-header);
+  --color-header-muted: var(--color-header-muted);
+  --color-header-fg: var(--color-header-fg);
+  --font-sans: var(--font-family-sans);
+  --font-mono: var(--font-family-mono);
+  --font-serif: var(--font-family-serif);
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-family-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--color-accent);
+}
+
+a:hover {
+  color: #1d3a4d;
+}
+
+input:focus {
+  outline: none;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes toastin {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-toastin {
+  animation: toastin 0.18s ease-out;
+}
+
+.animate-spin-fast {
+  animation: spin 0.8s linear infinite;
+}
