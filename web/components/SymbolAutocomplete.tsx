@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { getPositions } from "@/lib/data/source";
+import { usePositions } from "@/lib/data/ResultsProvider";
 
 interface SymbolAutocompleteProps {
   value: string;
@@ -13,7 +13,7 @@ interface SymbolAutocompleteProps {
 
 export function SymbolAutocomplete({ value, onPick, onQueryChange, excludeSymbols, isPicked }: SymbolAutocompleteProps) {
   const [focused, setFocused] = useState(false);
-  const positions = getPositions();
+  const positions = usePositions();
   const query = value.toUpperCase();
   const suggestions = isPicked
     ? []

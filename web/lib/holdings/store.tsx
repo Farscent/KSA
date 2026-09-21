@@ -1,16 +1,17 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { getPositions } from "@/lib/data/source";
+import { createContext, useCallback, useContext, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+
+import * as actions from "@/lib/holdings/actions";
 
 export const HOLDINGS_CAP = 15;
 export const SHARES_PER_LOT = 100;
-const STORAGE_KEY = "sectors-review:holdings:v1";
-const INTENTS_KEY = "sectors-review:intents:v1";
 
 export interface Holding {
   sym: string;
   lots: number;
+  /** Average cost per share, whole IDR. Stored as `holdings.avg_price`. */
   avg: number;
 }
 
@@ -23,124 +24,113 @@ export interface Intent {
 
 interface HoldingsContextValue {
   holdings: Holding[];
-  addHolding: (h: Holding) => void;
-  updateHolding: (index: number, h: Holding) => void;
-  deleteHolding: (index: number) => void;
+  addHolding: (h: Holding) => Promise<actions.ActionResult>;
+  updateHolding: (symbol: string, h: Holding) => Promise<actions.ActionResult>;
+  deleteHolding: (symbol: string) => Promise<actions.ActionResult>;
   atCap: boolean;
+  pending: boolean;
   intents: Record<string, Intent>;
-  recordIntent: (symbol: string, action: IntentAction) => void;
+  recordIntent: (symbol: string, action: IntentAction) => Promise<actions.ActionResult>;
 }
 
 const HoldingsContext = createContext<HoldingsContextValue | null>(null);
 
-function loadFromStorage<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
+/**
+ * Holdings live in Supabase, scoped to the signed-in user by row level
+ * security. The server layout reads them and seeds this provider, so the first
+ * paint already shows the real portfolio — there is no browser-storage copy and
+ * no demo portfolio to fall back to.
+ *
+ * Mutations go through server actions, which revalidate the layout. Local state
+ * is updated optimistically so the table responds immediately; a rejected write
+ * rolls that back and returns the reason for the caller to surface.
+ */
+export function HoldingsProvider({
+  initialHoldings,
+  initialIntents,
+  children,
+}: {
+  initialHoldings: Holding[];
+  initialIntents: Record<string, Intent>;
+  children: React.ReactNode;
+}) {
+  const [holdings, setHoldings] = useState<Holding[]>(initialHoldings);
+  const [intents, setIntents] = useState<Record<string, Intent>>(initialIntents);
+  const [serverState, setServerState] = useState({ initialHoldings, initialIntents });
+  const [pending, startTransition] = useTransition();
+  const router = useRouter();
+
+  // When a refresh brings fresh server data, adopt it as the new truth. This is
+  // React's documented adjust-state-during-render pattern rather than an
+  // effect: without it, useState would keep the first render's rows forever and
+  // a change made in another tab would never appear.
+  if (serverState.initialHoldings !== initialHoldings || serverState.initialIntents !== initialIntents) {
+    setServerState({ initialHoldings, initialIntents });
+    setHoldings(initialHoldings);
+    setIntents(initialIntents);
   }
-}
 
-const DEFAULT_HOLDINGS: Holding[] = [
-  { sym: "BBCA", lots: 40, avg: 9150 },
-  { sym: "BBRI", lots: 120, avg: 4480 },
-  { sym: "BBNI", lots: 80, avg: 5225 },
-  { sym: "ANTM", lots: 150, avg: 1780 },
-  { sym: "TLKM", lots: 200, avg: 3070 },
-  { sym: "ASII", lots: 90, avg: 5075 },
-  { sym: "ICBP", lots: 70, avg: 10850 },
-  { sym: "INDF", lots: 110, avg: 6250 },
-];
-
-interface HydratedState {
-  holdings: Holding[];
-  intents: Record<string, Intent>;
-  hydrated: boolean;
-}
-
-export function HoldingsProvider({ children }: { children: React.ReactNode }) {
-  const [{ holdings, intents, hydrated }, setState] = useState<HydratedState>({
-    holdings: DEFAULT_HOLDINGS,
-    intents: {},
-    hydrated: false,
-  });
-
-  // Reads localStorage once on mount (unavailable during server render), then
-  // renders the persisted holdings/intents client-side. This is the standard
-  // hydrate-after-mount pattern for browser-only storage — there is no
-  // alternative that avoids a server/client render mismatch, so the
-  // set-state-in-effect rule is deliberately overridden here, not skipped by
-  // oversight.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => {
-    setState({
-      holdings: loadFromStorage(STORAGE_KEY, DEFAULT_HOLDINGS),
-      intents: loadFromStorage(INTENTS_KEY, {}),
-      hydrated: true,
-    });
-  }, []);
-
-  const setHoldings = useCallback((updater: (prev: Holding[]) => Holding[]) => {
-    setState((s) => ({ ...s, holdings: updater(s.holdings) }));
-  }, []);
-
-  const setIntents = useCallback((updater: (prev: Record<string, Intent>) => Record<string, Intent>) => {
-    setState((s) => ({ ...s, intents: updater(s.intents) }));
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated || typeof window === "undefined") return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(holdings));
-  }, [holdings, hydrated]);
-
-  useEffect(() => {
-    if (!hydrated || typeof window === "undefined") return;
-    window.localStorage.setItem(INTENTS_KEY, JSON.stringify(intents));
-  }, [intents, hydrated]);
-
-  const knownSymbols = useMemo(() => new Set(getPositions().map((p) => p.symbol)), []);
+  const commit = useCallback(
+    async (optimistic: () => void, rollback: () => void, write: () => Promise<actions.ActionResult>) => {
+      optimistic();
+      const result = await write();
+      if (!result.ok) {
+        rollback();
+        return result;
+      }
+      startTransition(() => router.refresh());
+      return result;
+    },
+    [router]
+  );
 
   const addHolding = useCallback(
     (h: Holding) => {
-      setHoldings((prev) => {
-        if (prev.length >= HOLDINGS_CAP) return prev;
-        if (prev.some((r) => r.sym === h.sym)) return prev;
-        if (!knownSymbols.has(h.sym)) return prev;
-        return [...prev, h];
-      });
+      const previous = holdings;
+      return commit(
+        () => setHoldings((prev) => [...prev, h]),
+        () => setHoldings(previous),
+        () => actions.addHolding(h)
+      );
     },
-    [knownSymbols, setHoldings]
+    [commit, holdings]
   );
 
   const updateHolding = useCallback(
-    (index: number, h: Holding) => {
-      setHoldings((prev) => {
-        const next = [...prev];
-        next[index] = h;
-        return next;
-      });
+    (symbol: string, h: Holding) => {
+      const previous = holdings;
+      return commit(
+        () => setHoldings((prev) => prev.map((row) => (row.sym === symbol ? h : row))),
+        () => setHoldings(previous),
+        () => actions.updateHolding(symbol, h)
+      );
     },
-    [setHoldings]
+    [commit, holdings]
   );
 
   const deleteHolding = useCallback(
-    (index: number) => {
-      setHoldings((prev) => prev.filter((_, i) => i !== index));
+    (symbol: string) => {
+      const previous = holdings;
+      return commit(
+        () => setHoldings((prev) => prev.filter((row) => row.sym !== symbol)),
+        () => setHoldings(previous),
+        () => actions.deleteHolding(symbol)
+      );
     },
-    [setHoldings]
+    [commit, holdings]
   );
 
   const recordIntent = useCallback(
     (symbol: string, action: IntentAction) => {
-      setIntents((prev) => ({
-        ...prev,
-        [symbol]: { action, date: new Date().toISOString().slice(0, 10) },
-      }));
+      const previous = intents;
+      const date = new Date().toISOString().slice(0, 10);
+      return commit(
+        () => setIntents((prev) => ({ ...prev, [symbol]: { action, date } })),
+        () => setIntents(previous),
+        () => actions.recordIntent(symbol, action)
+      );
     },
-    [setIntents]
+    [commit, intents]
   );
 
   const value = useMemo<HoldingsContextValue>(
@@ -150,10 +140,11 @@ export function HoldingsProvider({ children }: { children: React.ReactNode }) {
       updateHolding,
       deleteHolding,
       atCap: holdings.length >= HOLDINGS_CAP,
+      pending,
       intents,
       recordIntent,
     }),
-    [holdings, addHolding, updateHolding, deleteHolding, intents, recordIntent]
+    [holdings, addHolding, updateHolding, deleteHolding, pending, intents, recordIntent]
   );
 
   return <HoldingsContext.Provider value={value}>{children}</HoldingsContext.Provider>;
