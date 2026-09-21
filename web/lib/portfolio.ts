@@ -1,6 +1,7 @@
 import type { Holding } from "@/lib/holdings/store";
-import { getPosition, isFlagged } from "@/lib/data/source";
+import { isFlagged } from "@/lib/data/source";
 import { SHARES_PER_LOT } from "@/lib/holdings/store";
+import type { ServePositionRecord, ServePriceHistoryRecord } from "@/lib/contract/types";
 
 export interface HoldingRow extends Holding {
   name: string;
@@ -13,9 +14,15 @@ export interface HoldingRow extends Holding {
   flagged: boolean;
 }
 
-export function buildRows(holdings: Holding[]): HoldingRow[] {
+/**
+ * Positions are passed in rather than imported: they come from Supabase via
+ * ResultsProvider, and keeping them an argument leaves this module pure and
+ * directly testable.
+ */
+export function buildRows(holdings: Holding[], positions: ServePositionRecord[]): HoldingRow[] {
+  const bySymbol = new Map(positions.map((p) => [p.symbol, p]));
   return holdings.map((h) => {
-    const position = getPosition(h.sym);
+    const position = bySymbol.get(h.sym);
     const cost = h.lots * SHARES_PER_LOT * h.avg;
     const mkt =
       position && position.value_status === "AVAILABLE" && position.close !== null
@@ -56,6 +63,69 @@ export function computeTotals(rows: HoldingRow[]): Totals {
   return { cost, mkt, pl, plPct, matchedCount: matched.length, totalCount: rows.length };
 }
 
+export interface ValuePoint {
+  trade_date: string;
+  /** Null when any held symbol has no close that day — a gap, never a zero. */
+  value: number | null;
+}
+
+export interface ValueSeries {
+  points: ValuePoint[];
+  /** Sessions where every held symbol had a close, out of sessions covered. */
+  completeSessions: number;
+  totalSessions: number;
+  start: string | null;
+  end: string | null;
+}
+
+/**
+ * Portfolio market value on each session in the ingested window.
+ *
+ * A session where any held symbol is missing a close yields `null` for that
+ * date rather than a partial sum — the same discipline `computeTotals` applies
+ * to a missing close, and the reason the sparkline can honestly show a break
+ * instead of a dip that never happened. Sessions are the union of dates any
+ * held symbol traded on; a symbol absent from that union on a given day is what
+ * makes the day incomplete.
+ */
+export function computeValueSeries(
+  holdings: Holding[],
+  history: ServePriceHistoryRecord[]
+): ValueSeries {
+  const held = holdings.filter((h) => h.lots > 0);
+  const relevant = history.filter((h) => held.some((holding) => holding.sym === h.symbol));
+
+  const closes = new Map<string, Map<string, number>>();
+  const sessions = new Set<string>();
+  for (const record of relevant) {
+    const bySymbol = new Map<string, number>();
+    for (const point of record.points) {
+      bySymbol.set(point.trade_date, point.close);
+      sessions.add(point.trade_date);
+    }
+    closes.set(record.symbol, bySymbol);
+  }
+
+  const dates = Array.from(sessions).sort();
+  const points: ValuePoint[] = dates.map((trade_date) => {
+    let total = 0;
+    for (const holding of held) {
+      const close = closes.get(holding.sym)?.get(trade_date);
+      if (close === undefined) return { trade_date, value: null };
+      total += holding.lots * SHARES_PER_LOT * close;
+    }
+    return { trade_date, value: held.length > 0 ? total : null };
+  });
+
+  return {
+    points,
+    completeSessions: points.filter((p) => p.value !== null).length,
+    totalSessions: points.length,
+    start: dates[0] ?? null,
+    end: dates[dates.length - 1] ?? null,
+  };
+}
+
 export interface SectorSlice {
   name: string;
   fraction: number;
@@ -82,9 +152,18 @@ export function computeSectorExposure(rows: HoldingRow[]): SectorSlice[] {
     .sort((a, b) => b.fraction - a.fraction);
 }
 
-/** Arc path for a pie/donut slice, ported from the prototype's polar() helper. */
+/**
+ * Arc paths for a pie/donut, starting at 12 o'clock and sweeping clockwise.
+ *
+ * A slice covering the whole chart needs its own branch: as one `A` command its
+ * start and end points coincide, and the SVG spec omits such an arc entirely, so
+ * the wedge below would collapse to a zero-area line and draw nothing. A
+ * single-sector portfolio is exactly that case, so it is the common path, not an
+ * edge case. Two stacked half-arcs give a real circle.
+ */
 export function donutSlices(slices: SectorSlice[], cx = 60, cy = 60, r = 54): { d: string; fill: string }[] {
-  let angle = -90;
+  // `polar` already offsets by -90°, so 0 here is the top of the circle.
+  let angle = 0;
   const polar = (deg: number): [number, number] => {
     const rad = ((deg - 90) * Math.PI) / 180;
     return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)];
@@ -94,6 +173,14 @@ export function donutSlices(slices: SectorSlice[], cx = 60, cy = 60, r = 54): { 
     const start = angle;
     const end = angle + sweep;
     angle = end;
+    // Tolerance rather than `>= 360`: a fraction that rounds to 0.9999999 would
+    // otherwise fall through to the wedge and silently draw nothing.
+    if (sweep >= 359.999) {
+      return {
+        fill: slice.fill,
+        d: `M${cx},${cy - r} A${r},${r} 0 1 1 ${cx},${cy + r} A${r},${r} 0 1 1 ${cx},${cy - r} Z`,
+      };
+    }
     const [x1, y1] = polar(start);
     const [x2, y2] = polar(end);
     const large = sweep > 180 ? 1 : 0;

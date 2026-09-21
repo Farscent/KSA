@@ -4,7 +4,8 @@ import { use } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { useHoldings } from "@/lib/holdings/store";
-import { getAlert, getComponents, getEvidence, getNarrative, getPosition, getRun } from "@/lib/data/source";
+import { getAlert, getComponents, getEvidence, getNarrative, getRun } from "@/lib/data/source";
+import { usePosition } from "@/lib/data/ResultsProvider";
 import { idr } from "@/lib/format";
 import { ProvenanceStrip } from "@/components/ProvenanceStrip";
 import { CohortFlowChart } from "@/components/CohortFlowChart";
@@ -28,7 +29,7 @@ export default function EvidencePage({ params }: { params: Promise<{ symbol: str
   const evidence = getEvidence(symbol);
   const narrative = getNarrative(symbol);
   const flowSeries = getFlowSeries(symbol);
-  const position = getPosition(symbol);
+  const position = usePosition(symbol);
   const holding = holdings.find((h) => h.sym === symbol);
 
   return (

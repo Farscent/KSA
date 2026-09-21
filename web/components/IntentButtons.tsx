@@ -17,9 +17,13 @@ export function IntentButtons({ symbol, onRecorded }: IntentButtonsProps) {
   const { intents, recordIntent } = useHoldings();
   const current = intents[symbol];
 
-  function record(action: IntentAction) {
-    recordIntent(symbol, action);
-    onRecorded(`Recorded: ${action} · ${symbol} · saved to review notes`);
+  async function record(action: IntentAction) {
+    const result = await recordIntent(symbol, action);
+    onRecorded(
+      result.ok
+        ? `Recorded: ${action} · ${symbol} · saved to review notes`
+        : `Could not record intent: ${result.error}`
+    );
   }
 
   return (

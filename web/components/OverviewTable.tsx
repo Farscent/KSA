@@ -5,6 +5,17 @@ import type { HoldingRow } from "@/lib/portfolio";
 import { StatusChip } from "@/components/StatusChip";
 import { Value } from "@/components/Value";
 
+/**
+ * Column widths are sized to the widest realistic IDR figure rather than to the
+ * demo's own numbers: `Rp 2.000.000.000` is 16 characters (~120px at 12.5px
+ * mono), so the money columns carry headroom. An overflowing cell here has no
+ * clipping to stop it and would slide underneath the opaque status chip, which
+ * silently truncates a figure instead of visibly breaking — hence the margin.
+ */
+const COLUMNS = "72px 1fr 44px 132px 132px 152px 88px";
+/** Fixed columns (620px) + six 16px gaps + 28px horizontal padding. */
+const MIN_WIDTH = 744;
+
 export function OverviewTable({ rows }: { rows: HoldingRow[] }) {
   const router = useRouter();
 
@@ -13,15 +24,18 @@ export function OverviewTable({ rows }: { rows: HoldingRow[] }) {
       className="rounded-lg border overflow-hidden bg-[var(--color-card)] flex flex-col"
       style={{ borderColor: "var(--color-line)" }}
     >
-      <div className="overflow-x-auto shrink-0">
+      {/* One horizontal scroll container around both header and body: separate
+          ones scroll independently, leaving the headers behind when the rows
+          are dragged sideways. */}
+      <div className="flex-1 min-h-0 overflow-auto">
         <div
-          className="grid gap-4 px-3.5 py-2.5 font-mono text-[10px] font-medium uppercase text-[var(--color-muted)]"
+          className="sticky top-0 z-10 grid gap-4 px-3.5 py-2.5 font-mono text-[10px] font-medium uppercase text-[var(--color-muted)]"
           style={{
-            gridTemplateColumns: "72px 1fr 44px 116px 116px 132px 88px",
+            gridTemplateColumns: COLUMNS,
             background: "var(--color-surface)",
             borderBottom: "1px solid var(--color-line-strong)",
             letterSpacing: "0.09em",
-            minWidth: 680,
+            minWidth: MIN_WIDTH,
           }}
         >
           <div>Symbol</div>
@@ -32,8 +46,6 @@ export function OverviewTable({ rows }: { rows: HoldingRow[] }) {
           <div className="text-right">Unrealized</div>
           <div className="text-right">Status</div>
         </div>
-      </div>
-      <div className="flex-1 min-h-0 overflow-auto">
         {rows.length === 0 && (
           <div className="px-4.5 py-5.5 text-center text-xs" style={{ color: "var(--color-muted-2)" }}>
             No holdings to review yet.
@@ -45,9 +57,9 @@ export function OverviewTable({ rows }: { rows: HoldingRow[] }) {
             onClick={() => r.flagged && router.push(`/${r.sym}`)}
             className="grid items-center gap-4 border-b px-3.5 py-3.5"
             style={{
-              gridTemplateColumns: "72px 1fr 44px 116px 116px 132px 88px",
+              gridTemplateColumns: COLUMNS,
               borderColor: "var(--color-line-soft)",
-              minWidth: 680,
+              minWidth: MIN_WIDTH,
               cursor: r.flagged ? "pointer" : "default",
               background: r.flagged ? "#fbfcfd" : "var(--color-card)",
             }}
@@ -63,12 +75,17 @@ export function OverviewTable({ rows }: { rows: HoldingRow[] }) {
             <div className="text-right font-mono text-[12.5px] tabular-nums text-[var(--color-ink)] whitespace-nowrap">
               <Value value={r.mkt} format="idr" />
             </div>
+            {/* Amount and percentage stack rather than share a line: together
+                they exceed any sensible column width, and the percentage is the
+                part that gets pushed out of sight. */}
             <div className="text-right font-mono text-[12.5px] font-medium tabular-nums text-[var(--color-ink)] whitespace-nowrap">
-              <Value value={r.pl} format="signedIdr" />
+              <div>
+                <Value value={r.pl} format="signedIdr" />
+              </div>
               {r.plPct !== null && (
-                <span className="ml-1 font-mono text-[10.5px] font-normal" style={{ color: "var(--color-muted)" }}>
-                  {"·"} <Value value={r.plPct} format="signedPct" />
-                </span>
+                <div className="font-mono text-[10.5px] font-normal" style={{ color: "var(--color-muted)" }}>
+                  <Value value={r.plPct} format="signedPct" />
+                </div>
               )}
             </div>
             <div className="flex justify-end">
