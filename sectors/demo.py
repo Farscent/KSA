@@ -9,6 +9,25 @@ from .registry import RegistryError, strict_json
 
 CONFIG_PATH = Path(__file__).with_name("demo-scope.json")
 
+# Display name and sector label per frozen symbol. These are reference data, not
+# measurements: a company's name and sector do not change daily, so they are
+# committed here rather than re-fetched every batch run. Spending an API credit
+# to re-read a constant would be waste. Values match the hand-written
+# serve_position fixture they were lifted from, so the rendered labels do not
+# shift when real closes replace synthetic ones.
+REFERENCE_DATA = {
+    "BBCA": ("Bank Central Asia", "Financials"),
+    "BBRI": ("Bank Rakyat Indonesia", "Financials"),
+    "BMRI": ("Bank Mandiri", "Financials"),
+    "BBNI": ("Bank Negara Indonesia", "Financials"),
+    "TLKM": ("Telkom Indonesia", "Communication services"),
+    "ASII": ("Astra International", "Industrials"),
+    "ICBP": ("Indofood CBP", "Consumer staples"),
+    "INDF": ("Indofood Sukses Makmur", "Consumer staples"),
+    "ANTM": ("Aneka Tambang", "Materials"),
+    "MDKA": ("Merdeka Copper Gold", "Materials"),
+}
+
 
 @dataclass(frozen=True)
 class DemoScope:

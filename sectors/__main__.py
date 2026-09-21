@@ -40,6 +40,22 @@ def main(argv=None) -> int:
     daily.add_argument("--report", type=Path, default=Path("data/qualification/BBCA-2026-09-09.json"))
     daily.add_argument("--timeout", type=float, default=30)
     daily.add_argument("--retries", type=int, default=2)
+    prices = commands.add_parser("ingest-prices",
+        help="Acquire the daily close window for the frozen demo universe; writes a results file, not the database")
+    prices_source = prices.add_mutually_exclusive_group()
+    prices_source.add_argument("--observation", type=Path, help="Replay a single archived symbol window")
+    prices_source.add_argument("--live", action="store_true",
+        help="Allow live fetch on cache miss; reads SECTORS_API_KEY. Costs 1 API credit per symbol")
+    prices.add_argument("--refresh", action="store_true", help="With --live, bypass cache")
+    prices.add_argument("--cache", type=Path, default=Path("data/price-cache"))
+    prices.add_argument("--report", type=Path, default=Path("data/results/prices.json"))
+    prices.add_argument("--timeout", type=float, default=30)
+    prices.add_argument("--retries", type=int, default=2)
+    published = commands.add_parser("publish",
+        help="Upsert an ingest-prices results file into the Supabase results tables")
+    published.add_argument("--results", type=Path, default=Path("data/results/prices.json"))
+    published.add_argument("--timeout", type=float, default=30)
+    published.add_argument("--retries", type=int, default=2)
     args = parser.parse_args(argv)
     try:
         if args.command == "qualify-day":
@@ -47,6 +63,19 @@ def main(argv=None) -> int:
             result = run(args)
             print(json.dumps(result, indent=2))
             return 1 if result["qualification_status"] == "INVALID" else 0
+        elif args.command == "ingest-prices":
+            from .prices import run
+            result = run(args)
+            unavailable = [r["symbol"] for r in result["serve_position"] if r["value_status"] == "UNAVAILABLE"]
+            print(json.dumps({"window": result["window"], "run": result["serve_run"],
+                              "symbols_unavailable": unavailable,
+                              "cache_warnings": result["cache_warnings"],
+                              "report": str(args.report)}, indent=2))
+            return 0
+        elif args.command == "publish":
+            from .publish import run
+            run(args)
+            return 0
         elif args.command == "import-snapshot":
             snapshot = capture(args.cache, args.body.read_bytes(), retrieved_at=args.retrieved_at,
                                http_status=args.http_status, source="synthetic" if args.synthetic else "local")

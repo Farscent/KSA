@@ -26,6 +26,8 @@ The implementation currently supports:
 * Accepted BBCA one-day qualification under the demo operational policy
 * Offline loading and validation of the frozen demo universe configuration
 * Draft `serve_alert` / `serve_alert_evidence` contract and deterministic fixture validation
+* Daily close ingestion for the frozen ten-symbol universe (`sectors/prices.py`), archived and replayable offline
+* Supabase results publication (`sectors/publish.py`) over the committed schema in `supabase/migrations/`
 
 ### Verification completed
 
@@ -92,7 +94,10 @@ which is consistent with exactly one broker changing classification from institu
 | Endpoint credit consumption and rate limits   | Pending confirmation; not independently established |
 | `serve_*` contract with Harfi                 | Under review: `1.0.0-draft.1`; not yet stable |
 | `serve_alert.json` / `serve_alert_evidence.json` fixtures | Complete: hand-written synthetic contract examples; no actual scored output |
-| Multi-stock ingestion                        | Pending                                     |
+| Results-table schema committed                | Complete: `supabase/migrations/`, documented in [results schema](docs/results-schema.md) |
+| Daily close ingestion (10 symbols, 90-day window) | Complete: `python -m sectors ingest-prices`; 1 API credit per symbol |
+| Publication to Supabase                       | Complete: `python -m sectors publish`; upserts, re-runnable |
+| Multi-stock broker-flow ingestion             | Pending                                     |
 | Scoring                                      | Pending                                     |
 | Connect application / Run Scan flow           | Pending                                     |
 
@@ -121,7 +126,7 @@ With the demo universe frozen, the next steps are:
 3. Resolve the initial lookback from verified IDX trading dates.
 4. Review the draft `serve_*` contract and deterministic examples with Harfi.
 5. Agree scoring semantics, historical cohort mapping, and publication/freshness behavior before stabilizing the contract.
-6. Build market-data ingestion and raw persistence.
+6. Extend ingestion from daily close to multi-stock, multi-day broker flow.
 7. Implement scoring on top of the verified ingestion foundation.
 
 
@@ -326,3 +331,42 @@ python -m sectors qualify-day --observation data/daily-cache/6a6d9628-635f-4a9c-
 
 No new requests, scoring, serving tables, or multi-symbol ingestion are added by
 this policy change. Broader ingestion and `serve_*` outputs remain separate work.
+
+
+## Daily close ingestion and publication
+
+Real closing prices for the frozen ten-symbol universe, used by the application's
+portfolio valuation. Ingestion and publication are separate commands so a batch can
+be inspected before anything is written to Supabase.
+
+```bash
+python -m sectors ingest-prices --live      # 1 API credit per symbol; 10 total
+python -m sectors ingest-prices             # replay the cache; no network
+python -m sectors publish                   # upsert the results file into Supabase
+```
+
+`ingest-prices` requests `https://api.sectors.app/v2/daily/{symbol}/` once per symbol
+over a 90-day window ending at the frozen demo date, which is the widest window the
+endpoint serves in one call. The whole-market daily-close endpoint is deliberately not
+used: it is paginated over the full ~950-ticker universe and costs roughly 32 credits
+per day pulled.
+
+Bodies are archived under `--cache` before decoding, with the same
+`body.bin` + `metadata.json` provenance the registry and broker-summary paths use, so
+a run can be replayed offline and re-verified by checksum. Without `--live` the command
+never reaches the network.
+
+A symbol the provider returns nothing for is published `UNAVAILABLE` with
+`PRICE_NOT_YET_INGESTED`, never as zero, and a session the provider omits stays absent
+from the series rather than being interpolated.
+
+### Environment
+
+| Variable | Used by | Notes |
+| --- | --- | --- |
+| `SECTORS_API_KEY` | `ingest-prices --live` | Same key the registry and qualification paths use. |
+| `SUPABASE_URL` | `publish` | Project URL, `https://…supabase.co`. |
+| `SUPABASE_SERVICE_ROLE_KEY` | `publish` | Bypasses row level security. Python batch only — never place it under `web/` or in a `NEXT_PUBLIC_*` variable. |
+
+Both publication variables are read at call time and validated before any request is
+made, so a missing key fails without touching the network.

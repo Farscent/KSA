@@ -102,15 +102,27 @@ Kept in sync with `README.md` — check there for the authoritative checklist. A
   flow-series/peer-screen/narrative outputs) with example fixtures
   (`docs/serve-contract-1.1.md`), written to unblock frontend layout work
 - Next.js frontend scaffold in `web/`, built against `1.1.0-draft.1` fixtures
+- Committed results-table schema (`supabase/migrations/`, `docs/results-schema.md`) —
+  the Python↔frontend boundary the locked decision required
+- Contract `1.2.0-draft.1` (`docs/serve-contract-1.2.md`): adds `data_kind: MEASURED`
+  and the `serve_price_history` output
+- Real daily close ingestion for the frozen ten (`sectors/prices.py`) and publication
+  to Supabase (`sectors/publish.py`)
+- Supabase-backed holdings and intents, per user with RLS. The demo portfolio and the
+  localStorage store are gone; portfolio valuation and the value sparkline now run on
+  ingested closes
 
 **Not yet built:**
-- Multi-stock, multi-day ingestion (currently single-stock/single-day only)
+- Multi-stock, multi-day *broker-flow* ingestion (currently single-stock/single-day only)
 - The actual anomaly/severity scoring engine (concentration, breadth, persistence) that
   fills `1.1.0-draft.1`'s `serve_components` / `serve_flow_series` with real numbers
 - Peer/sector comparison screener and scorecard (`serve_peer_screen`) with real data
 - LLM narration layer (`serve_narrative`) — the frontend's Ask panel is currently
   keyword-matched over on-screen figures, not an LLM call
-- Supabase results tables (frontend currently reads local fixtures, not Supabase)
+- Broker-flow results in Supabase — `serve_position`, `serve_price_history` and
+  `serve_run` are live; `serve_alert`, `serve_components`, `serve_flow_series`,
+  `serve_peer_screen` and `serve_narrative` are still read from local fixtures
+  (`web/lib/data/source.ts`) until the scoring engine produces them
 
 ## Locked decisions
 
@@ -146,6 +158,8 @@ python -m pip install -r requirements.txt
 python -m unittest discover -s tests -v
 python -m sectors registry --snapshot <dir> --db data/demo.sqlite3
 python -m sectors qualify-day --observation <dir> --registry-db data/sectors.sqlite3 --report <path>
+python -m sectors ingest-prices --live     # 10 API credits: 1 per demo symbol
+python -m sectors publish                  # upsert results into Supabase
 ```
 
 See `README.md` for full offline replay, caching, and live-fetch instructions.

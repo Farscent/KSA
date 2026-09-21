@@ -123,8 +123,13 @@ def fetch_daily(cache: Path, evidence: dict, *, timeout: float = 30, retries: in
 
 
 def fetch_observation(cache: Path, params: dict, archive_response, *, timeout: float = 30,
-                      retries: int = 2, get=None, sleep=time.sleep) -> Path:
-    """Shared daily transport; caller validates its fixed calendar/request first."""
+                      retries: int = 2, get=None, sleep=time.sleep, endpoint: str | None = None) -> Path:
+    """Shared daily transport; caller validates its fixed calendar/request first.
+
+    `endpoint` defaults to this module's broker-summary URL, so existing callers
+    are unaffected. Other modules requesting a different Sectors endpoint pass
+    their own; the archive callable still records whichever URL was used.
+    """
     if not math.isfinite(timeout) or not 0 < timeout <= 60 or not 0 <= retries <= 3:
         raise RegistryError("INVALID_FETCH_OPTIONS: timeout (0, 60]; retries 0..3")
     key = os.environ.get("SECTORS_API_KEY")
@@ -138,9 +143,10 @@ def fetch_observation(cache: Path, params: dict, archive_response, *, timeout: f
     except ImportError:
         raise RegistryError("MISSING_HTTP_DEPENDENCY: install requirements.txt") from None
     get = get or requests.get
+    url = endpoint or ENDPOINT
     for attempt in range(retries + 1):
         try:
-            with get(ENDPOINT, params=params, headers={"Authorization": key, "Accept": "application/json"},
+            with get(url, params=params, headers={"Authorization": key, "Accept": "application/json"},
                      timeout=timeout, allow_redirects=False, stream=True) as response:
                 status = response.status_code
                 # Preserve the entity body exactly as received, including gzip.
