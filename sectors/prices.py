@@ -57,7 +57,7 @@ def archive(cache, body, status, *, symbol, start, end, source="live",
             retrieved_at=None, content_encoding="identity"):
     if (type(status) is not int or not 100 <= status <= 599
             or source not in {"live", "local", "synthetic"}
-            or content_encoding not in {"identity", "gzip", "deflate", "unsupported"}):
+            or content_encoding not in d.ARCHIVE_ENCODINGS):
         raise RegistryError("INVALID_PRICE_PROVENANCE")
     meta = {"observation_id": str(uuid.uuid4()), "requested_symbol": symbol,
             "requested_start": start, "requested_end": end,
@@ -88,7 +88,7 @@ def load_observation(directory):
             raise ValueError
         if (type(meta["http_status"]) is not int or not 100 <= meta["http_status"] <= 599
                 or meta["source"] not in {"live", "local", "synthetic"}
-                or meta["content_encoding"] not in {"identity", "gzip", "deflate", "unsupported"}):
+                or meta["content_encoding"] not in d.ARCHIVE_ENCODINGS):
             raise ValueError
         meta["retrieved_at"] = utc_timestamp(meta["retrieved_at"])
         body = (Path(directory) / "body.bin").read_bytes()

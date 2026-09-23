@@ -53,7 +53,7 @@ def calendar_check(evidence, symbol=SYMBOL, start=START, end=END):
 
 def archive(cache, body, status, *, source="live", retrieved_at=None, content_encoding="identity"):
     if (type(status) is not int or not 100 <= status <= 599 or source not in {"live", "local", "synthetic"}
-            or content_encoding not in {"identity", "gzip", "deflate", "unsupported"}):
+            or content_encoding not in d.ARCHIVE_ENCODINGS):
         raise RegistryError("INVALID_RANGE_PROVENANCE")
     meta = {"observation_id": str(uuid.uuid4()), "requested_symbol": SYMBOL,
             "requested_start": START, "requested_end": END,
@@ -81,7 +81,7 @@ def load_observation(directory):
             raise RegistryError("UNSUPPORTED_TEST_CASE: range observation identity mismatch")
         if (type(meta["http_status"]) is not int or not 100 <= meta["http_status"] <= 599
                 or meta["source"] not in {"live", "local", "synthetic"}
-                or meta["content_encoding"] not in {"identity", "gzip", "deflate", "unsupported"}):
+                or meta["content_encoding"] not in d.ARCHIVE_ENCODINGS):
             raise ValueError
         meta["retrieved_at"] = utc_timestamp(meta["retrieved_at"])
         body = (Path(directory) / "body.bin").read_bytes()

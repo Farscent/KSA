@@ -22,7 +22,8 @@ import time
 
 from .registry import RegistryError, RETRY_STATUSES, retry_delay
 
-RESULTS_TABLES = ("serve_position", "serve_price_history", "serve_run")
+RESULTS_TABLES = ("serve_position", "serve_price_history", "serve_run",
+                  "serve_components", "serve_flow_series")
 # PostgREST accepts large arrays, but a bounded batch keeps a failed write's
 # blast radius small and its error message readable.
 CHUNK_SIZE = 500
@@ -75,6 +76,45 @@ def run_rows(payload: dict) -> list[dict]:
              "symbols_matched": record["symbols_matched"],
              "cohorts_unavailable": record["cohorts_unavailable"],
              "contract_version": payload["contract_version"]}]
+
+
+def components_rows(components: list[dict], *, contract_version: str = "1.1.0-draft.1") -> list[dict]:
+    """Flatten each record's four nested blocks into prefixed columns.
+
+    Mirrors `run_rows`' flattening of `serve_run.window` — the same pattern,
+    applied to four blocks instead of one, so PostgREST never has to interpret
+    nested JSON as SQL types.
+    """
+    rows = []
+    for record in components:
+        row = {"symbol": record["symbol"], "trade_date": record["trade_date"],
+               "scoring_status": record["scoring_status"], "contract_version": contract_version}
+        for block in ("concentration", "breadth", "persistence", "coverage"):
+            for field, value in record[block].items():
+                row[f"{block}_{field}"] = value
+        rows.append(row)
+    return rows
+
+
+def flow_series_rows(records: list[dict], *, contract_version: str = "1.1.0-draft.1") -> list[dict]:
+    return [{"symbol": r["symbol"], "cohort": r["cohort"], "points": r["points"],
+             "currency": r["currency"], "value_status": r["value_status"],
+             "reason_codes": r["reason_codes"], "contract_version": contract_version}
+            for r in records]
+
+
+def publish_flow(payload: dict, *, timeout: float = 30, retries: int = 2, post=None,
+                 sleep=time.sleep) -> dict:
+    """Write a `scoring.score_universe()` payload to the results tables.
+
+    `serve_position` rows for every symbol here must already exist (foreign
+    key), so this is meant to run after `publish()`, not instead of it.
+    """
+    written = {}
+    for table, rows in (("serve_components", components_rows(payload["serve_components"])),
+                        ("serve_flow_series", flow_series_rows(payload["serve_flow_series"]))):
+        written[table] = upsert(table, rows, timeout=timeout, retries=retries, post=post, sleep=sleep)
+    return written
 
 
 def chunked(rows: list[dict], size: int = CHUNK_SIZE):
