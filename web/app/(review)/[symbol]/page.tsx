@@ -1,36 +1,54 @@
 "use client";
 
-import { use } from "react";
+import { use, useMemo, useState } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { useHoldings } from "@/lib/holdings/store";
-import { getAlert, getComponents, getEvidence, getNarrative, getRun } from "@/lib/data/source";
-import { usePosition } from "@/lib/data/ResultsProvider";
+import { getAlert, getEvidence, getNarrative, getRun } from "@/lib/data/source";
+import { usePosition, useAgentRun, useAgentRunHistory, useComponents, useFlowSeries } from "@/lib/data/ResultsProvider";
 import { idr } from "@/lib/format";
+import { computeVerdict } from "@/lib/verdict";
 import { ProvenanceStrip } from "@/components/ProvenanceStrip";
 import { CohortFlowChart } from "@/components/CohortFlowChart";
 import { CohortTable } from "@/components/CohortTable";
 import { ConcentrationCard, BreadthCard, PersistenceCard, CoverageCard } from "@/components/ComponentCard";
 import { NarrativeCard } from "@/components/NarrativeCard";
+import { VerdictBadge } from "@/components/VerdictBadge";
+import { AnalystChat } from "@/components/AnalystChat";
+import { ReportView } from "@/components/ReportView";
 import { DisclaimerFooter } from "@/components/DisclaimerFooter";
-import { getFlowSeries } from "@/lib/data/source";
 
 export default function EvidencePage({ params }: { params: Promise<{ symbol: string }> }) {
   const { symbol: rawSymbol } = use(params);
   const symbol = rawSymbol.toUpperCase();
   const { holdings } = useHoldings();
 
+  const components = useComponents(symbol);
   const alert = getAlert(symbol);
-  const components = getComponents(symbol);
-  if (!alert || !components) notFound();
+  if (!components) notFound();
 
   const run = getRun();
 
   const evidence = getEvidence(symbol);
   const narrative = getNarrative(symbol);
-  const flowSeries = getFlowSeries(symbol);
+  const flowSeries = useFlowSeries(symbol);
   const position = usePosition(symbol);
   const holding = holdings.find((h) => h.sym === symbol);
+
+  // The saved Run Analyst report, when one exists, replaces the fixture
+  // narrative and verdict guess — it's the real thing the same components fed.
+  const agentRun = useAgentRun(symbol);
+  const runHistory = useAgentRunHistory(symbol);
+  const [selectedRunAt, setSelectedRunAt] = useState<string | null>(null);
+  // Defaults to the latest run; picking an older entry from "Past runs" swaps
+  // which saved report is displayed, keyed by created_at (rows have no other
+  // stable client-facing id).
+  const selectedRun = useMemo(
+    () => (selectedRunAt ? runHistory.find((r) => r.created_at === selectedRunAt) : undefined) ?? agentRun,
+    [selectedRunAt, runHistory, agentRun]
+  );
+  const verdict = selectedRun?.verdict ?? computeVerdict(alert, components);
+  const reportParagraphs = selectedRun?.paragraphs ?? narrative?.paragraphs;
 
   return (
     <>
@@ -58,6 +76,7 @@ export default function EvidencePage({ params }: { params: Promise<{ symbol: str
               <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "var(--color-accent)" }} />
               Review
             </span>
+            <VerdictBadge verdict={verdict} />
           </div>
           <div className="mt-2.5 max-w-[760px] text-xs leading-relaxed" style={{ color: "#4a535e" }}>
             Broker-flow structure over the last {run.window.sessions} sessions differs from this symbol&apos;s own
@@ -135,7 +154,44 @@ export default function EvidencePage({ params }: { params: Promise<{ symbol: str
         </div>
 
         <div className="flex flex-col gap-4.5">
-          {narrative && <NarrativeCard paragraphs={narrative.paragraphs} />}
+          {runHistory.length > 1 && (
+            <div className="flex items-center gap-2 text-[11px]" style={{ color: "var(--color-muted)" }}>
+              <span className="font-mono uppercase" style={{ letterSpacing: "0.08em" }}>
+                Past runs
+              </span>
+              <select
+                value={selectedRun?.created_at ?? runHistory[0].created_at}
+                onChange={(e) => setSelectedRunAt(e.target.value)}
+                className="rounded-md border px-2 py-1 font-mono text-[11px]"
+                style={{ borderColor: "var(--color-line)", color: "var(--color-ink)", background: "var(--color-card)" }}
+              >
+                {runHistory.map((r, i) => (
+                  <option key={r.created_at} value={r.created_at}>
+                    {new Date(r.created_at).toLocaleString()} {"·"} {r.verdict}
+                    {i === 0 ? " (latest)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {selectedRun?.sections && selectedRun.sections.length > 0 ? (
+            <ReportView
+              sections={selectedRun.sections}
+              steps={selectedRun.steps ?? undefined}
+              sources={selectedRun.provenance ?? undefined}
+              creditsUsed={selectedRun.credits_used}
+              durationMs={selectedRun.duration_ms}
+            />
+          ) : (
+            reportParagraphs && <NarrativeCard paragraphs={reportParagraphs} />
+          )}
+          {agentRun ? (
+            <AnalystChat symbol={symbol} />
+          ) : (
+            <div className="text-[11px]" style={{ color: "var(--color-muted)" }}>
+              Run Analyst from the overview to generate a report and ask questions about it.
+            </div>
+          )}
           <div className="rounded-lg border p-4.5" style={{ background: "var(--color-surface)", borderColor: "var(--color-line)" }}>
             <div className="font-mono text-[10px] font-medium uppercase text-[var(--color-muted)]" style={{ letterSpacing: "0.09em" }}>
               Review this holding against peers

@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 
 import * as actions from "@/lib/holdings/actions";
 
-export const HOLDINGS_CAP = 15;
-export const SHARES_PER_LOT = 100;
+// Defined in a React-free module so calculation code (lib/agent/metrics.ts)
+// can use them without importing this client component.
+import { HOLDINGS_CAP, SHARES_PER_LOT } from "@/lib/holdings/units";
+export { HOLDINGS_CAP, SHARES_PER_LOT };
 
 export interface Holding {
   sym: string;

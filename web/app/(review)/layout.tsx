@@ -1,7 +1,10 @@
 import { HoldingsProvider } from "@/lib/holdings/store";
 import { ResultsProvider } from "@/lib/data/ResultsProvider";
-import { fetchPositions, fetchPriceHistory, fetchRun } from "@/lib/data/results";
+import { fetchComponents, fetchFlowSeries, fetchPositions, fetchPriceHistory, fetchRun } from "@/lib/data/results";
+import { fetchAgentRuns, fetchAgentRunHistory } from "@/lib/data/agentRuns";
+import { fetchPortfolioRunHistory } from "@/lib/data/portfolioRuns";
 import { fetchHoldings, fetchIntents } from "@/lib/holdings/data";
+import { getComponents, getFlowSeries } from "@/lib/data/source";
 import { HeaderBar } from "@/components/HeaderBar";
 import { TabStrip } from "@/components/TabStrip";
 
@@ -22,9 +25,48 @@ export default async function ReviewLayout({ children }: { children: React.React
     fetchRun(),
   ]);
   const priceHistory = await fetchPriceHistory(positions.map((p) => p.symbol));
+  const symbolsHeld = holdings.map((h) => h.sym);
+  const [agentRuns, agentRunHistory, portfolioRunHistory] = await Promise.all([
+    fetchAgentRuns(symbolsHeld),
+    fetchAgentRunHistory(symbolsHeld),
+    fetchPortfolioRunHistory(),
+  ]);
+  const portfolioRun = portfolioRunHistory[0] ?? null;
+
+  // Real scored components (sectors/scoring.py) take priority over the two
+  // fixture symbols; a symbol in neither has genuinely never been scored,
+  // and componentsOf() correctly returns undefined for it rather than a
+  // fabricated example.
+  const symbols = positions.map((p) => p.symbol);
+  const [realComponents, realFlowSeries] = await Promise.all([
+    fetchComponents(symbols),
+    fetchFlowSeries(symbols),
+  ]);
+  const components = new Map(realComponents.map((c) => [c.symbol, c]));
+  const flowSeries = new Map(symbols.map((symbol) => [symbol, realFlowSeries.filter((r) => r.symbol === symbol)]));
+  for (const symbol of symbols) {
+    if (!components.has(symbol)) {
+      const fixture = getComponents(symbol);
+      if (fixture) components.set(symbol, fixture);
+    }
+    if ((flowSeries.get(symbol)?.length ?? 0) === 0) {
+      const fixtureSeries = getFlowSeries(symbol);
+      if (fixtureSeries.length > 0) flowSeries.set(symbol, fixtureSeries);
+    }
+  }
 
   return (
-    <ResultsProvider positions={positions} priceHistory={priceHistory} run={run}>
+    <ResultsProvider
+      positions={positions}
+      priceHistory={priceHistory}
+      run={run}
+      agentRuns={agentRuns}
+      portfolioRun={portfolioRun}
+      agentRunHistory={agentRunHistory}
+      portfolioRunHistory={portfolioRunHistory}
+      components={components}
+      flowSeries={flowSeries}
+    >
       <HoldingsProvider initialHoldings={holdings} initialIntents={intents}>
         <div className="min-h-screen flex flex-col items-center px-4 py-7">
           <div

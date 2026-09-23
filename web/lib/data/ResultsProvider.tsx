@@ -12,18 +12,43 @@
  */
 import { createContext, useContext, useMemo } from "react";
 import type {
+  ServeComponentsRecord,
+  ServeFlowSeriesRecord,
   ServePositionRecord,
   ServePriceHistoryRecord,
   ServeRunRecord,
 } from "@/lib/contract/types";
+import type { AgentRunRow } from "@/lib/data/agentRuns";
+import type { PortfolioRunRow } from "@/lib/data/portfolioRuns";
 
 interface ResultsContextValue {
   positions: ServePositionRecord[];
   priceHistory: ServePriceHistoryRecord[];
   /** Null before the first batch run has landed — render that, never a guess. */
   run: ServeRunRecord | null;
+  /** Latest saved Run Analyst report per held symbol; absent means "not run yet". */
+  agentRuns: Map<string, AgentRunRow>;
+  /** Latest saved portfolio-wide summary, or null if Run Analyst has never
+   * produced one. */
+  portfolioRun: PortfolioRunRow | null;
+  /** Every saved run per held symbol, newest first — backs the "Past runs" picker. */
+  agentRunHistory: Map<string, AgentRunRow[]>;
+  /** Every saved portfolio-wide summary, newest first. */
+  portfolioRunHistory: PortfolioRunRow[];
+  /**
+   * Real Supabase-scored components where `sectors/scoring.py` has run, else
+   * the fixture-backed example for the two symbols that still have one — the
+   * merge already happened server-side in the layout, so this map is the
+   * single source components should read.
+   */
+  components: Map<string, ServeComponentsRecord>;
+  flowSeries: Map<string, ServeFlowSeriesRecord[]>;
   positionOf: (symbol: string) => ServePositionRecord | undefined;
   historyOf: (symbol: string) => ServePriceHistoryRecord | undefined;
+  agentRunOf: (symbol: string) => AgentRunRow | undefined;
+  agentRunHistoryOf: (symbol: string) => AgentRunRow[];
+  componentsOf: (symbol: string) => ServeComponentsRecord | undefined;
+  flowSeriesOf: (symbol: string) => ServeFlowSeriesRecord[];
 }
 
 const ResultsContext = createContext<ResultsContextValue | null>(null);
@@ -32,11 +57,23 @@ export function ResultsProvider({
   positions,
   priceHistory,
   run,
+  agentRuns,
+  portfolioRun,
+  agentRunHistory,
+  portfolioRunHistory,
+  components,
+  flowSeries,
   children,
 }: {
   positions: ServePositionRecord[];
   priceHistory: ServePriceHistoryRecord[];
   run: ServeRunRecord | null;
+  agentRuns: Map<string, AgentRunRow>;
+  portfolioRun: PortfolioRunRow | null;
+  agentRunHistory: Map<string, AgentRunRow[]>;
+  portfolioRunHistory: PortfolioRunRow[];
+  components: Map<string, ServeComponentsRecord>;
+  flowSeries: Map<string, ServeFlowSeriesRecord[]>;
   children: React.ReactNode;
 }) {
   const value = useMemo<ResultsContextValue>(() => {
@@ -46,10 +83,20 @@ export function ResultsProvider({
       positions,
       priceHistory,
       run,
+      agentRuns,
+      portfolioRun,
+      agentRunHistory,
+      portfolioRunHistory,
+      components,
+      flowSeries,
       positionOf: (symbol) => byPosition.get(symbol),
       historyOf: (symbol) => byHistory.get(symbol),
+      agentRunOf: (symbol) => agentRuns.get(symbol),
+      agentRunHistoryOf: (symbol) => agentRunHistory.get(symbol) ?? [],
+      componentsOf: (symbol) => components.get(symbol),
+      flowSeriesOf: (symbol) => flowSeries.get(symbol) ?? [],
     };
-  }, [positions, priceHistory, run]);
+  }, [positions, priceHistory, run, agentRuns, portfolioRun, agentRunHistory, portfolioRunHistory, components, flowSeries]);
 
   return <ResultsContext.Provider value={value}>{children}</ResultsContext.Provider>;
 }
@@ -66,4 +113,28 @@ export function usePositions(): ServePositionRecord[] {
 
 export function usePosition(symbol: string): ServePositionRecord | undefined {
   return useResults().positionOf(symbol);
+}
+
+export function useAgentRun(symbol: string): AgentRunRow | undefined {
+  return useResults().agentRunOf(symbol);
+}
+
+export function usePortfolioRun(): PortfolioRunRow | null {
+  return useResults().portfolioRun;
+}
+
+export function useAgentRunHistory(symbol: string): AgentRunRow[] {
+  return useResults().agentRunHistoryOf(symbol);
+}
+
+export function usePortfolioRunHistory(): PortfolioRunRow[] {
+  return useResults().portfolioRunHistory;
+}
+
+export function useComponents(symbol: string): ServeComponentsRecord | undefined {
+  return useResults().componentsOf(symbol);
+}
+
+export function useFlowSeries(symbol: string): ServeFlowSeriesRecord[] {
+  return useResults().flowSeriesOf(symbol);
 }

@@ -54,13 +54,13 @@ export function OverviewTable({ rows }: { rows: HoldingRow[] }) {
         {rows.map((r) => (
           <div
             key={r.sym}
-            onClick={() => r.flagged && router.push(`/${r.sym}`)}
+            onClick={() => router.push(`/${r.sym}`)}
             className="grid items-center gap-4 border-b px-3.5 py-3.5"
             style={{
               gridTemplateColumns: COLUMNS,
               borderColor: "var(--color-line-soft)",
               minWidth: MIN_WIDTH,
-              cursor: r.flagged ? "pointer" : "default",
+              cursor: "pointer",
               background: r.flagged ? "#fbfcfd" : "var(--color-card)",
             }}
           >
@@ -95,15 +95,15 @@ export function OverviewTable({ rows }: { rows: HoldingRow[] }) {
         ))}
       </div>
       <div className="px-4.5 py-3 text-[11.5px] shrink-0" style={{ background: "#faf9f7", color: "var(--color-muted)" }}>
-        Rows flagged{" "}
+        Any row opens its evidence report.{" "}
         <span className="font-mono font-medium" style={{ color: "var(--color-accent)" }}>
           Review
         </span>{" "}
-        open an evidence report.{" "}
+        means broker-flow structure crossed a threshold this run.{" "}
         <span className="font-mono font-medium" style={{ color: "#3d4650" }}>
           Stable
         </span>{" "}
-        means no threshold was crossed this run {"—"} it is not an endorsement.
+        means no threshold was crossed {"—"} it is not an endorsement.
       </div>
     </div>
   );

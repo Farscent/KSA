@@ -2,11 +2,15 @@
 
 import { useState } from "react";
 import { answerFor } from "@/lib/ask/answer";
+import { askPortfolioFollowUp } from "@/lib/agent/actions";
 import type { Totals } from "@/lib/portfolio";
 
 interface AskPanelProps {
   totals: Totals;
   flaggedSymbols: string[];
+  /** True once a portfolio summary exists to ground answers in — before
+   * that, fall back to the keyword matcher over on-screen totals. */
+  hasSummary?: boolean;
 }
 
 interface ThreadItem {
@@ -14,17 +18,33 @@ interface ThreadItem {
   a: string;
 }
 
-export function AskPanel({ totals, flaggedSymbols }: AskPanelProps) {
+export function AskPanel({ totals, flaggedSymbols, hasSummary }: AskPanelProps) {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [thread, setThread] = useState<ThreadItem[]>([]);
+  const [pending, setPending] = useState(false);
 
-  function submit(question: string) {
+  async function submit(question: string) {
     const q = question.trim();
-    if (!q) return;
-    const a = answerFor(q, totals, flaggedSymbols);
-    setThread((t) => [...t, { q, a }]);
+    if (!q || pending) return;
     setInput("");
+
+    if (!hasSummary) {
+      const a = answerFor(q, totals, flaggedSymbols);
+      setThread((t) => [...t, { q, a }]);
+      return;
+    }
+
+    setPending(true);
+    const result = await askPortfolioFollowUp(
+      q,
+      thread.map((t) => ({ q: t.q, a: t.a }))
+    );
+    setThread((t) => [
+      ...t,
+      { q, a: result.ok ? result.answer : `Couldn't answer that: ${result.error}` },
+    ]);
+    setPending(false);
   }
 
   return (
@@ -46,7 +66,7 @@ export function AskPanel({ totals, flaggedSymbols }: AskPanelProps) {
             Ask about this result
           </div>
           <div className="mt-1 text-[11px]" style={{ color: "var(--color-muted-2)" }}>
-            Answers only reference figures shown on this page {"—"} never new data or advice.
+            Answers only reference figures in the saved portfolio summary {"—"} never new data or advice.
           </div>
 
           {thread.length > 0 && (
@@ -59,6 +79,11 @@ export function AskPanel({ totals, flaggedSymbols }: AskPanelProps) {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+          {pending && (
+            <div className="mt-3 text-xs" style={{ color: "var(--color-muted)" }}>
+              Thinking{"…"}
             </div>
           )}
 
@@ -86,7 +111,8 @@ export function AskPanel({ totals, flaggedSymbols }: AskPanelProps) {
             />
             <button
               onClick={() => submit(input)}
-              className="cursor-pointer rounded-md px-4 py-2 font-medium text-xs text-white"
+              disabled={pending}
+              className="cursor-pointer rounded-md px-4 py-2 font-medium text-xs text-white disabled:opacity-50"
               style={{ background: "var(--color-accent)" }}
             >
               Ask

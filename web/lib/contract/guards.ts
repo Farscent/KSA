@@ -167,7 +167,10 @@ function assertComponentBlock(
 }
 
 export function assertComponents(row: ServeComponentsRecord): void {
-  assertTrue(row.scoring_status === "PENDING_DEFINITION", "scoring_status must be PENDING_DEFINITION");
+  assertTrue(
+    row.scoring_status === "PENDING_DEFINITION" || row.scoring_status === "SCORED",
+    "scoring_status must be PENDING_DEFINITION or SCORED"
+  );
   assertComponentBlock(row.concentration, {
     top_n: row.concentration.top_n,
     share: row.concentration.share,

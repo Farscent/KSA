@@ -188,10 +188,19 @@ export interface CoverageBlock extends ComponentBlockBase {
   completeness: Completeness | null;
 }
 
+/**
+ * serve_components' own scoring_status is wider than serve_alert's: once
+ * `sectors/scoring.py` has actually measured concentration/breadth/
+ * persistence/coverage for a symbol, the row carries "SCORED" rather than
+ * the fixture-era "PENDING_DEFINITION". serve_alert's severity/score are
+ * still undefined regardless, so ScoringStatus itself stays unchanged there.
+ */
+export type ComponentsScoringStatus = ScoringStatus | "SCORED";
+
 export interface ServeComponentsRecord {
   symbol: string;
   trade_date: string;
-  scoring_status: ScoringStatus;
+  scoring_status: ComponentsScoringStatus;
   concentration: ConcentrationBlock;
   breadth: BreadthBlock;
   persistence: PersistenceBlock;
