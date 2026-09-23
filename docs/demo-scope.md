@@ -53,11 +53,27 @@ symbols or dates, or external market-wide completeness.
 The API credit grant is **1,000 hackathon team credits according to the official
 competition rules**, as supplied in the project decision. Those rules were not
 independently retrieved or rechecked during this offline milestone. The grant is
-not a measurement of the remaining account balance. Actual API credit cost per
-endpoint/request has not yet been independently established; endpoint consumption,
-rate limits, and practical request budgeting remain to be confirmed. Do not infer
-a number of affordable requests from the grant alone.
+not a measurement of the remaining account balance — an actual live account
+balance is still unconfirmed.
 
-No new network fetch is part of this milestone. The `serve_*` contract,
-multi-stock ingestion, scoring, serving tables, and frontend work remain pending.
-The existing fixed BBCA qualifier is not generalized by this configuration.
+Per-endpoint cost is now verified from `docs.sectors.app` (see `AGENTS.md`'s
+"Sectors API: rules that bind our code" for the full table), not inferred:
+`broker-summary/{symbol}/` is 1 credit per <=14-day range, `foreign-flow/{symbol}/`
+is 1 credit per <=90-day range, `company/report/` and `subsector/report/` are 1
+credit per requested section, and a 404 still bills 1 credit while 400/401/403/429/
+5xx are free. `ingest-prices --live` costs 10 credits for the frozen universe;
+`ingest-flow --live` (broker-flow, `sectors/flow.py`) costs ~70 credits for the same
+universe over the current ~90-day window. Practical rate limits and a live account
+balance remain unconfirmed.
+
+Broker-flow ingestion and scoring have now been run against live data for the
+whole frozen universe: 70 credits spent once, every response archived under
+`data/flow-cache/`, and `serve_components` / `serve_flow_series` populated with
+real `MEASURED` rows. Re-running the scoring costs nothing, because the parse
+replays from that archive.
+
+Three provider behaviours surfaced only under live data — zstd-encoded bodies,
+per-broker foreign/domestic split fields, and a handful of broker-days whose
+entire core aggregate is null. All three are handled explicitly rather than
+worked around; see `AGENTS.md` and `docs/decision-log.md`. The existing fixed
+BBCA qualifier is not generalized by this configuration.

@@ -73,10 +73,18 @@ Chat <-- Next.js app (Harfi, TypeScript) <-- Supabase (Postgres, finished result
 
 Two rules that keep this honest:
 
-1. **The frontend never calls the Sectors API directly.** All external API usage happens
-   in the scheduled Python batch. This protects the credit budget and keeps the UI fast —
-   the in-app "Run Scan" button re-runs scoring against already-downloaded data, no network
-   call to Sectors.
+1. **The browser never calls the Sectors API.** Bulk historical ingestion — everything that
+   feeds scoring — happens in the scheduled Python batch, and the in-app "Run Scan" button
+   re-runs scoring against already-downloaded data with no network call to Sectors.
+
+   *Amended when the research pipeline landed*: the Next **server** may call Sectors, but
+   only through `web/lib/sectors/client.ts` and only via the cache-first, credit-metered
+   wrapper in `web/lib/sectors/cache.ts`, which enforces a hard per-run ceiling
+   (`SECTORS_RUN_CREDIT_CEILING`, default 25/symbol) and records every fetch in a provenance
+   ledger. A repeated Run Analyst pass over the same symbol costs **0 credits**. This buys
+   the per-company research (profile, financials, valuation, peers, nearby context) that the
+   batch has no reason to pre-fetch for all of IDX. It does not move broker-flow ingestion
+   out of Python, and it must not: see `docs/decision-log.md`.
 2. **The LLM never sees raw data and never does math.** It receives a package of
    already-computed numbers (from Supabase) and turns them into sentences. If a figure
    isn't in the package, the LLM cannot state it. The in-app "Ask about this result"
@@ -111,18 +119,80 @@ Kept in sync with `README.md` — check there for the authoritative checklist. A
 - Supabase-backed holdings and intents, per user with RLS. The demo portfolio and the
   localStorage store are gone; portfolio valuation and the value sparkline now run on
   ingested closes
+- "Run Analyst" (`web/components/RunReviewBar.tsx`, `web/lib/agent/actions.ts`): a real
+  per-symbol LLM narration pass over the fixture-backed `serve_components` package
+  (OpenRouter, `web/lib/llm/`), saved to a new `public.agent_runs` table
+  (`supabase/migrations/0003_agent_runs.sql`) with a deterministic `Healthy`/`Watch`/
+  `Rebalance` verdict (`web/lib/verdict.ts` — a triage label, not a combined severity
+  score) and a per-symbol follow-up chat (`web/components/AnalystChat.tsx`). See
+  `docs/decision-log.md`'s "Run Analyst" entry.
+- Multi-symbol, multi-day broker-flow ingestion (`sectors/flow.py`, chunked into <=14-day
+  `/v2/broker-summary/{symbol}/` calls per the provider's documented range limit) and the
+  concentration/breadth/persistence/coverage scoring engine itself (`sectors/scoring.py`),
+  against each symbol's own baseline within the ingested window. Reported separately, never
+  combined into one score, per this file's founding rule. Publishes real `serve_components`
+  / `serve_flow_series` rows to Supabase (`supabase/migrations/0004_flow_results.sql`,
+  widened `sectors/publish.py`) via `python -m sectors ingest-flow --live && score-flow &&
+  publish-flow`. `web/lib/data/results.ts` reads these first; the two-symbol fixture is now
+  only a fallback for whichever symbols haven't been scored yet (`web/app/(review)/layout.tsx`
+  merges the two server-side). This is the root-cause fix for Run Analyst's old
+  `"No scoring data available for <symbol> yet"` error, which fired for every held symbol
+  except BBCA/ANTM because the LLM package was fixture-only before this landed
+  (`web/lib/llm/package.ts`).
+
+- **Live broker-flow ingestion has been run.** All ten demo symbols are scored from real
+  `/v2/broker-summary/` data over the frozen 61-session window (~70 credits, cached on disk
+  in `data/flow-cache/`), and `serve_components` / `serve_flow_series` in Supabase hold 10
+  and 40 real `MEASURED` rows. Three provider realities surfaced only under live data and are
+  now handled: responses arrive **zstd**-encoded (`sectors/daily.py:decoded_json`); rows carry
+  **foreign/domestic split fields** beyond the core schema (`sectors/flow.py`'s
+  `OPTIONAL_ROW_FIELDS`); and a few broker-days report the **entire core aggregate as null**,
+  which is excluded and counted, never zero-filled.
+- **Per-company research pipeline** (`web/lib/sectors/`, `web/lib/research/`,
+  `web/lib/agent/pipeline.ts`): a server-side, cache-first, credit-metered client plus
+  projections and deterministic metrics, feeding a sectioned report
+  (`web/lib/llm/report.ts`) that Run Analyst saves to `agent_runs` with its package,
+  provenance and step trace (`supabase/migrations/0005`, `0006`). Valuation figures are
+  **reported from Sectors with attribution, never predicted** — the "No price prediction"
+  rule is unchanged.
+- **Portfolio-wide summary.** Run Analyst used to review every holding but produce nothing
+  about the portfolio as a whole — one line of text on the dashboard, with each report
+  reachable only by clicking through to a flagged symbol. It now runs a second synthesis
+  pass, at **zero extra Sectors credits**, over the per-symbol packages the run already
+  built (`web/lib/agent/portfolio.ts`, `web/lib/agent/portfolioMetrics.ts`), narrated
+  section by section (`web/lib/llm/portfolioReport.ts`) and saved to `portfolio_runs`
+  (`supabase/migrations/0007`). It renders on the dashboard itself
+  (`web/components/PortfolioReportView.tsx`), not on a detail page. The founding
+  concentration/breadth/persistence rule holds at the portfolio level too: the cross-holding
+  section reports **three independent standout lists**, never a ranked "riskiest holdings"
+  view or a combined score — see `docs/decision-log.md`. The "Ask about this result" panel
+  is now LLM-backed against the saved portfolio package (`askPortfolioFollowUp`), replacing
+  the keyword matcher for any run that has a summary; the matcher remains the fallback before
+  a first run. Every holding row on the overview is clickable now, not only flagged ones —
+  the per-symbol reports it links to were always real, just unreachable.
 
 **Not yet built:**
-- Multi-stock, multi-day *broker-flow* ingestion (currently single-stock/single-day only)
-- The actual anomaly/severity scoring engine (concentration, breadth, persistence) that
-  fills `1.1.0-draft.1`'s `serve_components` / `serve_flow_series` with real numbers
-- Peer/sector comparison screener and scorecard (`serve_peer_screen`) with real data
-- LLM narration layer (`serve_narrative`) — the frontend's Ask panel is currently
-  keyword-matched over on-screen figures, not an LLM call
-- Broker-flow results in Supabase — `serve_position`, `serve_price_history` and
-  `serve_run` are live; `serve_alert`, `serve_components`, `serve_flow_series`,
-  `serve_peer_screen` and `serve_narrative` are still read from local fixtures
-  (`web/lib/data/source.ts`) until the scoring engine produces them
+- Live *streaming* of the research step log. `runPipeline` is an `AsyncGenerator` yielding
+  step events, and `RunReviewBar` shows the real post-hoc trace each run returns, but the
+  events are not yet streamed to the browser as they happen — that needs the route handler in
+  Part 3 of the plan referenced in `docs/decision-log.md`.
+- Macro and policy context. The report declares a `macro` block that is permanently
+  `UNAVAILABLE` with `NO_SEARCH_PROVIDER`: there is no web-search key, and a macro figure
+  without a source URL must never be stated. Declared rather than omitted so the gap is
+  visible.
+- The `serve_peer_screen` **contract output** with real data. Peer comparison itself now
+  runs for real inside the research pipeline (`peerMetrics` in `web/lib/agent/metrics.ts`,
+  including the honest "no eligible peer" path with stated exclusion reasons), but it is not
+  yet emitted as the contract's own `serve_peer_screen` record or written by the batch.
+- The formal `serve_narrative` contract output itself is still fixture-only; Run
+  Analyst's report is a separate, `agent_runs`-backed path that follows the same
+  "LLM never sees raw data or does math" rule but isn't yet the contract's own field.
+- `serve_alert` / `serve_alert_evidence` remain fixture-only, so `isFlagged` and the
+  overview's "flagged" count still read the two-symbol fixture even though
+  `serve_components` is now real for all ten. Closing that gap means deriving alerts from
+  the scored components in the batch. Navigation no longer depends on this flag (every row
+  is clickable), but the "N flagged" count on the dashboard still can be misleading until
+  it is derived from real scoring.
 
 ## Locked decisions
 
