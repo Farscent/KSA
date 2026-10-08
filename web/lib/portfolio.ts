@@ -1,5 +1,5 @@
 import type { Holding } from "@/lib/holdings/store";
-import { isFlagged } from "@/lib/data/source";
+import { holdingStatus, type HoldingStatus, type SavedRunLike } from "@/lib/flowStatus";
 import { SHARES_PER_LOT } from "@/lib/holdings/store";
 import type { ServePositionRecord, ServePriceHistoryRecord } from "@/lib/contract/types";
 
@@ -11,7 +11,8 @@ export interface HoldingRow extends Holding {
   mkt: number | null;
   pl: number | null;
   plPct: number | null;
-  flagged: boolean;
+  /** Review status from the latest saved Run Analyst pass — see lib/flowStatus.ts. */
+  status: HoldingStatus;
 }
 
 /**
@@ -19,7 +20,14 @@ export interface HoldingRow extends Holding {
  * ResultsProvider, and keeping them an argument leaves this module pure and
  * directly testable.
  */
-export function buildRows(holdings: Holding[], positions: ServePositionRecord[]): HoldingRow[] {
+export function buildRows(
+  holdings: Holding[],
+  positions: ServePositionRecord[],
+  /** Latest saved run per symbol; a symbol absent from it has not been reviewed. */
+  runOf: (symbol: string) => SavedRunLike | undefined,
+  /** Trade date of the currently scored components, per symbol. */
+  currentTradeDateOf: (symbol: string) => string | null
+): HoldingRow[] {
   const bySymbol = new Map(positions.map((p) => [p.symbol, p]));
   return holdings.map((h) => {
     const position = bySymbol.get(h.sym);
@@ -38,7 +46,7 @@ export function buildRows(holdings: Holding[], positions: ServePositionRecord[])
       mkt,
       pl,
       plPct,
-      flagged: isFlagged(h.sym),
+      status: holdingStatus({ run: runOf(h.sym), currentTradeDate: currentTradeDateOf(h.sym), currentLots: h.lots }),
     };
   });
 }

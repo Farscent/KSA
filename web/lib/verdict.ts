@@ -1,4 +1,5 @@
-import type { ServeAlertRecord, ServeComponentsRecord } from "@/lib/contract/types";
+import type { ServeComponentsRecord } from "@/lib/contract/types";
+import { crossedSignals, flowSignals } from "@/lib/flowStatus";
 
 export type Verdict = "Healthy" | "Watch" | "Rebalance";
 
@@ -9,26 +10,32 @@ export type Verdict = "Healthy" | "Watch" | "Rebalance";
  * never blends the components' own numbers into a new one, and every label
  * still leaves the components displayed separately underneath it.
  *
- * "Elevated" for a band-scored block means the band sits in the top 40% of
- * its own band_count (e.g. band 3 of 5) — a fixed, auditable cut, not a
- * model judgment.
+ * Derived from the scored components alone (see lib/flowStatus.ts for the
+ * cuts). It used to also require a hand-written fixture alert, which existed
+ * for two symbols only, so every other holding was stuck on "Healthy".
+ *
+ * - nothing crossed (or nothing measurable): Healthy
+ * - anything crossed: Watch
+ * - concentration crossed on fully matched broker data: Rebalance
  */
-function isElevated(band: number | null, bandCount: number | null): boolean {
-  if (band === null || bandCount === null || bandCount <= 0) return false;
-  return band / bandCount >= 0.6;
+export function computeVerdict(components: ServeComponentsRecord | null | undefined): Verdict {
+  if (!components) return "Healthy";
+
+  const signals = flowSignals(components);
+  const crossed = crossedSignals(signals);
+  if (crossed.length === 0) return "Healthy";
+
+  const fullCoverage = components.coverage.completeness === "FULL";
+  if (signals.concentration === true && fullCoverage) return "Rebalance";
+  return "Watch";
 }
 
-export function computeVerdict(
-  alert: ServeAlertRecord | undefined,
-  components: ServeComponentsRecord | undefined
-): Verdict {
-  if (!alert) return "Healthy";
-  if (!components) return "Watch";
-
-  const { concentration, coverage } = components;
-  const uncertainCoverage = coverage.completeness === "PARTIAL" || coverage.completeness === "UNKNOWN";
-  const elevated = isElevated(concentration.band, concentration.band_count);
-
-  if (elevated && !uncertainCoverage) return "Rebalance";
-  return "Watch";
+/**
+ * The verdict to show for a saved report. Recomputed from the components the
+ * run saw whenever they are available, so reports saved while the verdict
+ * still depended on the two-symbol fixture show the same label a fresh run
+ * would; older rows without saved components keep the label they were saved with.
+ */
+export function savedVerdict(row: { verdict: Verdict; flow_components: ServeComponentsRecord | null }): Verdict {
+  return row.flow_components ? computeVerdict(row.flow_components) : row.verdict;
 }
