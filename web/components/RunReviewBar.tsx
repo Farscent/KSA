@@ -26,6 +26,10 @@ interface RunReviewBarProps {
    * then updated in place to "done"/"failed"/"skipped" once that step
    * finishes. Appears one at a time as the pipeline actually progresses. */
   liveSteps?: StepEvent[];
+  /** True while the portfolio-wide summary is being written, after every holding is done. */
+  summarising?: boolean;
+  /** When the latest saved portfolio run was made; null if there has been none. */
+  lastRunAt?: string | null;
 }
 
 const PIPELINE_STEP_COUNT = 7;
@@ -39,9 +43,11 @@ const STATUS_MARK: Record<string, string> = { done: "✓", failed: "✕", skippe
 function ResearchLogBody({
   outcomes,
   pending,
+  summarising,
 }: {
   outcomes: RunOutcome[];
   pending: { symbol: string; steps: StepEvent[] } | null;
+  summarising: boolean;
 }) {
   return (
     <div className="mt-2 flex flex-col gap-2">
@@ -63,6 +69,15 @@ function ResearchLogBody({
             </div>
           </div>
         ))}
+      {summarising && (
+        <div className="flex items-center gap-1.5 font-mono text-[11px]" style={{ color: "var(--color-ink)" }}>
+          <span
+            className="animate-spin-fast inline-block h-2.5 w-2.5 rounded-full border-2"
+            style={{ borderColor: "var(--color-line)", borderTopColor: "var(--color-muted)" }}
+          />
+          portfolio {"·"} summarising{"…"}
+        </div>
+      )}
       {pending && (
         <div>
           <div className="flex items-center gap-1.5 font-mono text-[11px]" style={{ color: "var(--color-ink)" }}>
@@ -88,7 +103,7 @@ function ResearchLogBody({
   );
 }
 
-export function RunReviewBar({ state, onRun, holdingsCount, outcomes, inFlightSymbol, liveSteps }: RunReviewBarProps) {
+export function RunReviewBar({ state, onRun, holdingsCount, outcomes, inFlightSymbol, liveSteps, summarising = false, lastRunAt }: RunReviewBarProps) {
   const [elapsed, setElapsed] = useState(0);
 
   const [prevState, setPrevState] = useState(state);
@@ -115,6 +130,9 @@ export function RunReviewBar({ state, onRun, holdingsCount, outcomes, inFlightSy
   // come looking for right after Run Analyst finishes.
   if (state === "reviewRun" && failures.length === 0 && !hasResearchLog) return null;
 
+  // A saved run means this is a re-run, not a first one — even after a reload.
+  const hasSavedRun = Boolean(lastRunAt);
+
   return (
     <div
       className="flex flex-col gap-3 border-b bg-[var(--color-card)] px-7 py-6.5"
@@ -128,10 +146,12 @@ export function RunReviewBar({ state, onRun, holdingsCount, outcomes, inFlightSy
               className="cursor-pointer rounded-md px-5 py-2.5 font-medium text-[12.5px] text-white"
               style={{ background: "var(--color-accent)" }}
             >
-              Run Analyst
+              {hasSavedRun ? "Re-run Analyst" : "Run Analyst"}
             </button>
             <div className="text-[12.5px]" style={{ color: "var(--color-muted)" }}>
-              Analyst hasn{"'"}t reviewed {holdingsCount} holdings yet.
+              {hasSavedRun
+                ? `Last reviewed ${new Date(lastRunAt as string).toLocaleString()}.`
+                : `Analyst hasn't reviewed ${holdingsCount} holdings yet.`}
             </div>
           </>
         )}
@@ -149,11 +169,20 @@ export function RunReviewBar({ state, onRun, holdingsCount, outcomes, inFlightSy
               Researching{"…"}
             </div>
             <div className="text-[12.5px]" style={{ color: "var(--color-muted)" }}>
-              {PIPELINE_STEP_COUNT} steps per holding {"·"} {elapsed}s elapsed
+              {PIPELINE_STEP_COUNT} research steps + report per holding {"·"} {elapsed}s elapsed
             </div>
           </>
         )}
 
+        {state === "reviewRun" && (
+          <button
+            onClick={onRun}
+            className="cursor-pointer rounded-md px-5 py-2.5 font-medium text-[12.5px] text-white"
+            style={{ background: "var(--color-accent)" }}
+          >
+            Re-run Analyst
+          </button>
+        )}
         {state === "reviewRun" && failures.length > 0 && (
           <div className="text-[12.5px]" style={{ color: "var(--color-ink)" }}>
             Analyst finished with {failures.length} problem{failures.length === 1 ? "" : "s"}.
@@ -181,12 +210,12 @@ export function RunReviewBar({ state, onRun, holdingsCount, outcomes, inFlightSy
           collapsed toggle would defeat the point of showing the agent is
           still working. Once the run finishes it collapses behind a summary,
           same as before. */}
-      {(hasResearchLog || hasPending) && (state === "running" ? (
+      {(hasResearchLog || hasPending || summarising) && (state === "running" ? (
         <div>
           <div className="font-mono text-[11px]" style={{ color: "var(--color-muted)" }}>
             Research log
           </div>
-          <ResearchLogBody outcomes={outcomes ?? []} pending={pending} />
+          <ResearchLogBody outcomes={outcomes ?? []} pending={pending} summarising={summarising} />
         </div>
       ) : (
         <details>
@@ -196,7 +225,7 @@ export function RunReviewBar({ state, onRun, holdingsCount, outcomes, inFlightSy
           >
             Research log
           </summary>
-          <ResearchLogBody outcomes={outcomes ?? []} pending={null} />
+          <ResearchLogBody outcomes={outcomes ?? []} pending={null} summarising={false} />
         </details>
       ))}
     </div>
