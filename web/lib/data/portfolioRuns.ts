@@ -1,5 +1,5 @@
 /**
- * Server-only read of the latest saved portfolio-wide Run Analyst summary
+ * Server-only reads of saved portfolio-wide Run Analyst summaries
  * (see supabase/migrations/0007_portfolio_runs.sql). Same read-only seam as
  * lib/data/agentRuns.ts — never calls the Sectors API, never imported from a
  * "use client" file.
@@ -11,6 +11,7 @@ import type { StepTrace } from "@/lib/agent/package";
 import type { ProvenanceEntry } from "@/lib/sectors/cache";
 
 export interface PortfolioRunRow {
+  id: string;
   as_of: string;
   symbols: string[];
   sections: ReportSection[];
@@ -30,7 +31,7 @@ export async function fetchLatestPortfolioRun(): Promise<PortfolioRunRow | null>
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("portfolio_runs")
-    .select("as_of, symbols, sections, package, provenance, steps, credits_used, duration_ms, created_at")
+    .select("id, as_of, symbols, sections, package, provenance, steps, credits_used, duration_ms, created_at")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle<PortfolioRunRow>();
@@ -39,19 +40,39 @@ export async function fetchLatestPortfolioRun(): Promise<PortfolioRunRow | null>
   return data ?? null;
 }
 
-/**
- * Every saved portfolio-wide summary, newest first, capped at `limit`.
- * Powers the dashboard's "Past runs" picker.
- */
-export async function fetchPortfolioRunHistory(limit = 10): Promise<PortfolioRunRow[]> {
+/** One row of the history list: enough to describe a run without its report body. */
+export interface PortfolioRunListItem {
+  id: string;
+  as_of: string;
+  symbols: string[];
+  credits_used: number | null;
+  duration_ms: number | null;
+  created_at: string;
+}
+
+/** Saved portfolio runs, newest first. Light columns only — see `fetchPortfolioRunById` for the report. */
+export async function fetchPortfolioRunList(limit = 50): Promise<PortfolioRunListItem[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("portfolio_runs")
-    .select("as_of, symbols, sections, package, provenance, steps, credits_used, duration_ms, created_at")
+    .select("id, as_of, symbols, credits_used, duration_ms, created_at")
     .order("created_at", { ascending: false })
     .limit(limit)
-    .returns<PortfolioRunRow[]>();
+    .returns<PortfolioRunListItem[]>();
 
-  if (error) throw new Error(`portfolio_runs history read failed: ${error.message}`);
+  if (error) throw new Error(`portfolio_runs list read failed: ${error.message}`);
   return data ?? [];
+}
+
+/** One saved portfolio run with its full report, or null if the id matches nothing the caller owns. */
+export async function fetchPortfolioRunById(id: string): Promise<PortfolioRunRow | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("portfolio_runs")
+    .select("id, as_of, symbols, sections, package, provenance, steps, credits_used, duration_ms, created_at")
+    .eq("id", id)
+    .maybeSingle<PortfolioRunRow>();
+
+  if (error) throw new Error(`portfolio_runs read failed: ${error.message}`);
+  return data ?? null;
 }
