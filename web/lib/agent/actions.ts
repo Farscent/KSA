@@ -15,7 +15,6 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
-import { runResearch } from "@/lib/agent/pipeline";
 import { generateReport, type ReportSection } from "@/lib/llm/report";
 import { answerFollowUp } from "@/lib/llm/narrate";
 import { LLM_MODEL } from "@/lib/llm/client";
@@ -52,11 +51,15 @@ function explain(message: string): string {
 /**
  * Everything that happens once a research package is fully built: narration,
  * the "nothing writable" honesty check, and the Supabase save. Split out of
- * `runAnalystForSymbol` so the streaming route (`lib/agent/stream.ts`) can
- * reuse the exact same finish-up logic after streaming the pipeline events
- * that build `pkg` in the first place.
+ * the pipeline so the streaming route (`lib/agent/stream.ts`) can run it after
+ * forwarding the pipeline events that build `pkg` in the first place.
  */
-export async function finishAnalystRun(pkg: ResearchPackage, startedAt: number): Promise<RunAnalystResult> {
+export async function finishAnalystRun(
+  pkg: ResearchPackage,
+  startedAt: number,
+  /** The portfolio run this report belongs to; null for a single-symbol run. */
+  runId: string | null = null
+): Promise<RunAnalystResult> {
   let report;
   try {
     report = await generateReport(pkg);
@@ -64,7 +67,9 @@ export async function finishAnalystRun(pkg: ResearchPackage, startedAt: number):
     return { ok: false, error: explain(err instanceof Error ? err.message : "Analyst run failed.") };
   }
 
-  const written = report.sections.filter((s) => s.paragraphs.length > 0);
+  // A section counts as written if it has a fact table or prose. A table
+  // whose model summary was rejected is still real, measured content.
+  const written = report.sections.filter((s) => s.paragraphs.length > 0 || (s.rows?.length ?? 0) > 0);
   if (written.length === 0) {
     // Every section came back unwritable. Report that honestly rather than
     // saving an empty report that looks like a finished one.
@@ -90,6 +95,7 @@ export async function finishAnalystRun(pkg: ResearchPackage, startedAt: number):
     model: LLM_MODEL,
     credits_used: pkg.credits_used,
     duration_ms,
+    run_id: runId,
   });
   if (error) return { ok: false, error: error.message };
 
@@ -113,19 +119,6 @@ export async function finishAnalystRun(pkg: ResearchPackage, startedAt: number):
   };
 }
 
-export async function runAnalystForSymbol(symbol: string): Promise<RunAnalystResult> {
-  const started = Date.now();
-
-  let pkg;
-  try {
-    pkg = await runResearch(symbol);
-  } catch (err) {
-    return { ok: false, error: explain(err instanceof Error ? err.message : "Research failed.") };
-  }
-
-  return finishAnalystRun(pkg, started);
-}
-
 export type SummarisePortfolioResult =
   | { ok: true; sections: import("@/lib/llm/portfolioReport").ReportSection[]; credits_used: number; duration_ms: number }
   | { ok: false; error: string };
@@ -137,7 +130,9 @@ export type SummarisePortfolioResult =
  */
 export async function summarisePortfolio(
   packages: ResearchPackage[],
-  windowSessions: number | null
+  windowSessions: number | null,
+  /** Same id the per-symbol reports of this pass were saved under. */
+  runId: string
 ): Promise<SummarisePortfolioResult> {
   if (packages.length === 0) {
     return { ok: false, error: "No holdings were successfully reviewed this run." };
@@ -153,7 +148,7 @@ export async function summarisePortfolio(
     return { ok: false, error: explain(err instanceof Error ? err.message : "Portfolio summary failed.") };
   }
 
-  const written = report.sections.filter((s) => s.paragraphs.length > 0);
+  const written = report.sections.filter((s) => s.paragraphs.length > 0 || (s.rows?.length ?? 0) > 0);
   if (written.length === 0) {
     const reasons = [...new Set(report.sections.flatMap((s) => s.reason_codes))].join("; ");
     return { ok: false, error: `No portfolio summary could be written (${reasons || "no figures available"}).` };
@@ -162,6 +157,7 @@ export async function summarisePortfolio(
   const duration_ms = Date.now() - started;
   const supabase = await createClient();
   const { error } = await supabase.from("portfolio_runs").insert({
+    id: runId,
     as_of: pkg.as_of,
     symbols: packages.map((p) => p.symbol),
     sections: report.sections,
