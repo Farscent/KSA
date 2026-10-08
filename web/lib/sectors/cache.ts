@@ -109,7 +109,18 @@ function isFresh(fetchedAt: string, ttlDays: number): boolean {
 export async function getOrFetch(
   endpoint: string,
   params: Record<string, string>,
-  { credits, ledger, ttlDays = DEFAULT_TTL_DAYS }: { credits: number; ledger: CreditLedger; ttlDays?: number }
+  {
+    credits,
+    ledger,
+    ttlDays = DEFAULT_TTL_DAYS,
+    fetcher = sectorsFetch,
+  }: {
+    credits: number;
+    ledger: CreditLedger;
+    ttlDays?: number;
+    /** Defaults to the Sectors client; the macro search passes its own. */
+    fetcher?: (endpoint: string, params: Record<string, string>) => Promise<unknown>;
+  }
 ): Promise<FetchResult> {
   const hash = paramsHash(endpoint, params);
   const supabase = await createClient();
@@ -137,7 +148,7 @@ export async function getOrFetch(
   // must never be refused for budget reasons.
   if (ledger.wouldExceed(credits)) throw new CreditCeilingError(ledger.ceiling);
 
-  const payload = await sectorsFetch(endpoint, params);
+  const payload = await fetcher(endpoint, params);
   const fetched_at = new Date().toISOString();
 
   const { error } = await supabase
