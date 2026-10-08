@@ -380,5 +380,40 @@ class DailyTests(unittest.TestCase):
             d.current_registry(synthetic_db)
 
 
+class ContentEncodingTests(unittest.TestCase):
+    """The live API serves zstd; archives predating its support said 'unsupported'."""
+
+    payload = {"symbol": "BBCA.JK", "data": []}
+
+    def body(self):
+        return json.dumps(self.payload).encode()
+
+    def test_zstd_body_decodes(self):
+        from compression import zstd
+        meta = {"content_encoding": "zstd"}
+        self.assertEqual(d.decoded_json(meta, zstd.compress(self.body())), self.payload)
+
+    def test_legacy_unsupported_marker_is_recovered_by_magic_number(self):
+        """Bodies already paid for must not need a re-fetch to become readable."""
+        from compression import zstd
+        for encoding, blob in (("zstd", zstd.compress(self.body())),
+                               ("gzip", gzip.compress(self.body(), mtime=0)),
+                               ("identity", self.body())):
+            with self.subTest(encoding=encoding):
+                self.assertEqual(d.sniff_encoding(blob), encoding)
+                self.assertEqual(d.decoded_json({"content_encoding": "unsupported"}, blob),
+                                 self.payload)
+
+    def test_corrupt_zstd_reports_decoding_failure_not_a_crash(self):
+        meta = {"content_encoding": "zstd"}
+        corrupt = b"\x28\xb5\x2f\xfd" + b"garbage"
+        with self.assertRaisesRegex(r.RegistryError, "CONTENT_DECODING_FAILED"):
+            d.decoded_json(meta, corrupt)
+
+    def test_transport_records_zstd_rather_than_discarding_it(self):
+        self.assertIn("zstd", d.TRANSPORT_ENCODINGS)
+        self.assertIn("zstd", d.ARCHIVE_ENCODINGS)
+
+
 if __name__ == "__main__":
     unittest.main()

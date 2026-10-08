@@ -150,3 +150,314 @@ Run Scan must not initiate live Sectors requests.
 | Completeness pilot symbol | Confirmed | BBCA — selected as the first high-liquidity stock for daily broker-data qualification. |
 | Completeness pilot date | Confirmed | 2026-09-09 — selected as a completed historical weekday with buffer from the latest session. Exchange-session validity must still be checked explicitly by the completeness workflow. |
 | Completeness pilot scope | Confirmed | Exactly 1 symbol × 1 trade date. No backfill or scoring during this experiment. |
+
+## Frontend design import — 2026-09-20
+
+The Sectors Review Prototype design project (`claude.ai/design/p/0f176895-dd41-49f2-bc21-0364c023ad59`,
+file `Sectors Review Prototype.dc.html`) was imported and used to plan the Next.js
+frontend build. It resolves several previously open product questions. Four
+decisions were made in reconciling it against the frozen scope and `CLAUDE.md`:
+
+1. **Universe** — the prototype's own symbol list (14 tickers, including out-of-scope
+   BBTN/UNVR/ADRO/PGAS/KLBF/SMGR and missing BMRI/MDKA) is **not** authoritative.
+   The frontend is aligned to the frozen ten in `sectors/demo-scope.json`. The
+   prototype's second flagged demo stock (BBTN) is replaced with an in-scope symbol.
+   `sectors/demo-scope.json` itself is not re-frozen.
+2. **Contract surface** — `1.0.0-draft.1` does not carry price, sector, company name,
+   coverage percentage, component values, time series, or peer-screen data that the
+   design renders. Contract `1.1.0-draft.1` is being drafted (see
+   `docs/serve-contract-1.1.md`) as an additive extension — `1.0.0-draft.1` and its
+   fixtures/tests are untouched. The frontend is built against `1.1.0-draft.1` fixtures.
+3. **Portfolio valuation** — unrealized P&L, market value, a portfolio-value
+   sparkline, and a sector-exposure donut are new surface not previously specified
+   in `CLAUDE.md`. Kept, to be backed by real daily-close and sector data
+   (`fetch-daily-close`, `fetch-companies`) rather than left illustrative. These are
+   descriptive figures, not predictions, so the no-forecasting rule is unaffected.
+4. **Severity metrics** — the design defines concentration as CR3 (top-3 broker
+   share of sell value against a baseline share) and breadth as the count/share of
+   brokers that changed side, and states there is no combined severity score,
+   reporting components separately. This is adopted in place of `CLAUDE.md`'s prior
+   `seller_hhi` / `inst_sell_breadth` / "severity score" wording, which is amended
+   accordingly. `AGENTS.md` already required severity never be collapsed into one
+   opaque number, so this aligns the two documents rather than introducing a new rule.
+
+The frozen `lookback_trading_days: 20` does not supply the design's 60-session flow
+chart. This is not resolved by re-freezing the scope; `serve_run.window` in the new
+contract carries whatever window the batch actually produces (`sessions`, `start`,
+`end`), and the frontend renders that window as given, rather than assuming 60.
+
+## Run Analyst: a verdict label, not a combined severity score — 2026-09-21
+
+"Run review" became "Run Analyst" (`web/components/RunReviewBar.tsx`): it now makes a
+real per-symbol call — building each held symbol's already-computed
+`serve_alert`/`serve_components`/`serve_alert_evidence`/`serve_peer_screen` package
+(`web/lib/llm/package.ts`), narrating it with an LLM (OpenRouter, model
+`openai/gpt-5.6-luna`, `web/lib/llm/narrate.ts`), and saving the result to a new
+`public.agent_runs` table (`supabase/migrations/0003_agent_runs.sql`) — rather than the
+previous hardcoded `setTimeout`.
+
+This adds a three-tier **verdict** (`Healthy` / `Watch` / `Rebalance`,
+`web/lib/verdict.ts`) shown on the position detail page. This is a triage label, not a
+reintroduction of the combined severity score `CLAUDE.md` and `AGENTS.md` forbid: it is
+computed deterministically from the components' own `band`/`band_count` and
+`coverage.completeness` fields (not by the LLM, which is only ever told the verdict, never
+asked to invent one), and the components continue to render separately underneath it,
+unchanged. The LLM still never sees raw data and never does math — it receives only the
+explicit whitelisted package in `lib/llm/package.ts`, and every number it states must
+resolve to a `grounded_in` path present in that package (validated in
+`web/lib/llm/narrate.ts` before anything is saved or shown).
+
+The "Ask about this result" panel gained a per-symbol counterpart,
+`web/components/AnalystChat.tsx`, for follow-up questions about a saved report,
+grounded in that same package. The original portfolio-wide `AskPanel`/`answerFor`
+keyword-matching (`web/lib/ask/answer.ts`) is unchanged — it answers about portfolio
+totals and the flagged list, a different scope than a single symbol's saved report, so
+folding the two together was left out of scope rather than forced.
+
+## Real broker-flow scoring engine, and Run Analyst's fixture dependency — 2026-09-21
+
+The user reported Run Analyst as broken in practice: for a portfolio holding BBRI, the
+overview showed `Analyst run had a problem on at least one holding: No scoring data
+available for BBRI yet.` Root cause: `web/lib/llm/package.ts`'s `buildAnalystPackage`
+read `serve_components` only from `tests/fixtures/serve_components_v11.json`, which has
+hand-written records for BBCA and ANTM only — every other held symbol returned `null`
+and `web/lib/agent/actions.ts` turned that into a hard error before any LLM call.
+
+This is fixed at the root rather than patched in the UI. Research into `docs.sectors.app`
+(recorded in `AGENTS.md`'s new "Sectors API: rules that bind our code" section) found
+`/v2/broker-summary/{symbol}/` costs 1 credit per <=14-day range — cheap enough (~70
+credits for the whole ten-symbol universe over the ingested window) that real
+concentration/breadth/persistence scoring, which `CLAUDE.md` had listed as "not yet
+built," was affordable now rather than a future milestone.
+
+Added:
+
+- `sectors/flow.py` — generalises `sectors/daily.py` (hardcoded to `SYMBOL = "BBCA"`) to
+  every frozen symbol, chunking the ingestion window into <=14-day calls per the
+  provider's documented range limit. Cannot reuse `daily.inspect_schema` directly — it
+  hardcodes the expected `symbol` response field as the literal `"BBCA.JK"` — so this
+  module validates independently, reusing only `daily.py`'s row-shape constants.
+- `sectors/scoring.py` — CR3 concentration, broker-side-flip breadth, trailing-window
+  persistence, and registry-cohort coverage, each computed against a symbol's own window
+  and each `UNAVAILABLE` (never a fabricated zero) when its own prerequisite is missing —
+  a short window for persistence, no sell value for concentration/coverage, no prior
+  session for breadth. Per this file's founding rule, the four components are computed
+  and reported independently; there is no combined-score field anywhere in this module or
+  its output tables.
+- `supabase/migrations/0004_flow_results.sql` — `serve_components` / `serve_flow_series`,
+  written by the batch (`sectors/publish.py`'s widened `RESULTS_TABLES`, new
+  `publish_flow`), read-only to the app, matching `0001_results.sql`'s RLS pattern.
+- `web/lib/data/results.ts` gained `fetchComponents`/`fetchFlowSeries`; the review layout
+  (`web/app/(review)/layout.tsx`) now merges real Supabase rows with the fixture per
+  symbol (real takes priority) before handing both down through `ResultsProvider`, and
+  `buildAnalystPackage` now checks Supabase before falling back to the fixture. The
+  contract's `ScoringStatus` type gained `"SCORED"` as a value distinct from the
+  fixture-era `"PENDING_DEFINITION"` (`web/lib/contract/types.ts`,
+  `web/lib/contract/guards.ts`) — the two coexist because `serve_alert`'s own
+  score/severity remain genuinely undefined, only `serve_components`' scoring status
+  changed.
+
+Not done in this pass: nobody with `SECTORS_API_KEY` has actually run `ingest-flow
+--live` yet, so the new Supabase tables are schema-correct but empty, and every symbol
+still falls back to the BBCA/ANTM fixture until that live run happens. Verified instead
+with synthetic/local archived observations end-to-end
+(`tests/test_flow_pipeline.py`) and 16 new unit tests on hand-computed broker rows
+(`tests/test_flow.py`, `tests/test_scoring.py`) — all 140 Python tests pass, `tsc
+--noEmit`, `eslint`, and `next build` are all clean on the web side.
+
+Also out of scope for this pass, and left for a follow-up: the user separately asked for
+Run Analyst to become a visible, streaming "deep research" agent (live steps, company
+fundamentals/peers/valuation/macro context, an expandable long-form report) modelled on
+a supplied example equity-research report. That plan is recorded at
+`~/.claude/plans/help-me-plan-for-cozy-dragonfly.md` (Parts 2-4) and was not built here —
+it requires a live `SECTORS_API_KEY` and a new web-search provider key to test end to
+end, neither available in this session, and is a separate-sized piece of work from the
+root-cause fix above.
+
+## The research pipeline, and three things only live data revealed — 2026-09-21
+
+The previous entry left broker-flow ingestion unrun and the deep-research agent
+unbuilt, both blocked on a `SECTORS_API_KEY`. The key now exists in
+`web/.env.local`, so both were done. Two decisions and three bugs are worth
+recording.
+
+### Decision 1: the Next server may call Sectors, narrowly
+
+`CLAUDE.md`'s architecture rule 1 said "the frontend never calls the Sectors API".
+That rule is now **amended, not broken**: the *browser* still never calls Sectors,
+but the Next *server* does, through `web/lib/sectors/client.ts` alone, and only via
+the cache-first wrapper in `web/lib/sectors/cache.ts`.
+
+Why amend rather than push this into the Python batch: the batch pre-fetches what
+*scoring* needs across a frozen universe. Per-company research — profile,
+financials, valuation, peers, nearby context — is fetched for the one symbol a user
+is looking at, on demand. Pre-fetching all of it for all of IDX would cost far more
+credits than fetching it lazily and caching it.
+
+The mitigations are what make that safe, and they are not optional:
+
+- **Cache-first.** `public.sectors_cache` (migration 0005) keys responses by
+  `(endpoint, params_hash)`. A repeated Run Analyst pass over the same symbol
+  spends **0 credits**. First pass is ~11 credits/symbol.
+- **Hard ceiling.** `CreditLedger` enforces `SECTORS_RUN_CREDIT_CEILING`
+  (default 25/symbol). Hitting it marks the remaining steps `skipped` with a reason
+  code — it never silently truncates a report into looking complete.
+- **Never retry a 404.** A 404 bills a credit because the lookup ran; 400/401/403/
+  429/5xx are free, so backoff on those costs nothing. Encoded in `RETRY_STATUSES`.
+- **Provenance.** Every fetch records `{endpoint, params, credits, cached,
+  fetched_at}`, and the report's Sources section is rendered from that ledger in
+  code — never written by the model.
+
+`sectors_cache` carries the one RLS exception in this database: it is writable by
+any authenticated user, because the Next server writes it using the caller's own
+session. It holds public market data and no `user_id`, so the exposure is cache
+poisoning, not disclosure. The alternative — putting a `SUPABASE_SERVICE_ROLE_KEY`
+in the web environment — would hand the app a key that bypasses every RLS policy
+here, which is a worse trade. Documented in the migration itself.
+
+### Decision 2: persistence measures structure, because direction is identically zero
+
+`scoring.py`'s `persistence_block` originally scored the *net direction* of each
+session: `sum(bval - sval)` across all brokers, compared against the anchor day.
+Against real data it returned `0/10, longest_run 0` for **all ten symbols**.
+
+It was not a rounding bug. Broker buys and sells balance to the rupiah every single
+session — verified directly: `sum(bval) == sum(sval)` exactly, on every trade date.
+So the market-wide net is always 0, the anchor direction is always 0, and every flag
+is false. This is precisely the zero-sum trap `CLAUDE.md`'s founding thesis names
+and `AGENTS.md` warns to check for ("verify buys == sells per date before trusting
+any downstream number") — and the scoring code walked straight into it.
+
+Persistence now tracks the *structure*: whether each session's top-3 sell
+concentration sat on the same side of that symbol's own baseline as the anchor
+session did. "Same direction" keeps its literal meaning — same side of baseline —
+over a quantity that actually varies. The results discriminate: ICBP 8/10 with a
+run of 4 (sustained), BBCA 4/10 with a run of 1 (a one-day spike despite sitting in
+band 5 of 5). A regression test (`test_zero_sum_nets_do_not_flatten_persistence`)
+pins the property so this cannot come back.
+
+### Three provider realities the synthetic tests could not have caught
+
+1. **Responses are zstd-encoded.** `decoded_json` handled gzip and deflate and
+   binned everything else as `CONTENT_ENCODING_UNSUPPORTED`, so all 70 paid-for
+   chunks failed to parse. Python 3.14's stdlib `compression.zstd` decodes them with
+   no new dependency. Archives written before this recorded `"unsupported"` rather
+   than the real header, so `decoded_json` recovers those by magic number — a wrong
+   guess cannot fabricate data, because decompression or `strict_json` fails. No
+   credits were re-spent.
+2. **Rows carry foreign/domestic splits.** Real rows have 22 fields, not the 12 in
+   `daily.ROW_FIELDS`, and the parser demanded exact set equality — making every
+   live response `SCHEMA_INVALID`. Now the core fields must be present and the ten
+   known `f_*`/`d_*` fields are permitted by name, so an *unknown* new field is
+   still a finding. They are recorded but never scored: the foreign/domestic split
+   is `/v2/foreign-flow/`'s signal, not this metric's.
+3. **Some broker-days report a wholly null core.** 23 of 35,006 rows have every core
+   value null while the foreign fields carry data. That is "not reported", not
+   "traded zero" — it crashed the sum, and coercing it to 0 would have invented a
+   data point. Those rows are excluded and counted
+   (`UNREPORTED_BROKER_ROWS ... never zero-filled`).
+
+### Scope
+
+Built: the cached client, endpoint wrappers, projections, deterministic metrics,
+the `ResearchPackage` with a generalised `allowedGroundedPaths`, the step pipeline
+as an `AsyncGenerator`, a six-section report, and the expandable `ReportView` with
+per-section `grounded_in` footers.
+
+Deliberately not built:
+
+- **Live streaming of the step log.** The pipeline already yields step events and
+  the UI shows the real post-hoc trace with true durations and credit costs, but
+  events are not streamed as they happen. The generator shape exists so the route
+  handler is a thin addition rather than a rewrite.
+- **Macro and policy context.** No web-search provider key exists. The package
+  declares a `macro` block that is permanently `UNAVAILABLE` with
+  `NO_SEARCH_PROVIDER`, rather than omitting the section, so the gap is visible. A
+  macro figure without a source URL is exactly the kind of number this system must
+  never state.
+- **Quarterly financials.** `quarterlyFinancials` is wired in
+  `web/lib/sectors/endpoints.ts` but not called: it bills 1 credit per quarter and
+  the annual series plus `yoy_quarter_*` already carry the growth figures.
+
+Verified: 148 Python tests; 24 offline TypeScript tests against real captured
+payloads in `web/fixtures/research/`; 2 live contract tests
+(`SECTORS_LIVE=1 pnpm test`) that catch the provider renaming a path or a field;
+`tsc --noEmit`, `eslint` and `next build` all clean.
+
+## The portfolio summary is a second synthesis pass, not a bigger prompt — 2026-09-21
+
+### Problem
+
+Part 2 shipped a real per-symbol research pipeline, but Run Analyst reviews a
+*portfolio* and produced nothing about the portfolio. It looped symbol by symbol,
+wrote one `agent_runs` row each, and the dashboard showed a single line —
+"3 holdings reviewed · 0 flagged" — with the actual prose reachable only by
+clicking into a flagged holding. Two things made even that hard: `isFlagged`
+still asked the two-symbol fixture whether a `serve_alert` existed, so real
+`serve_components` rows for other symbols rendered "Stable" and the overview
+table made those rows unclickable, and `RunReviewBar` returned `null` on a clean
+run, hiding the research log at the exact moment someone would look for it.
+
+### Decision
+
+Add a portfolio-level synthesis: after the existing sequential per-symbol loop
+finishes, run one more pass — `buildPortfolioPackage` in
+`web/lib/agent/portfolio.ts` — over the `ResearchPackage`s that loop already
+built, and narrate it section by section (`web/lib/llm/portfolioReport.ts`),
+saved to a new `portfolio_runs` table and rendered on the dashboard itself
+(`PortfolioReportView.tsx`), not on a detail page.
+
+This costs **zero extra Sectors credits**: every figure the summary cites was
+already fetched (and cached) for the per-symbol reports. It is a second
+projection over data in hand, not a bigger prompt — the same "project down,
+then narrate" shape as the per-symbol pipeline, one level up.
+
+### Why not one bigger prompt across all holdings
+
+A `HOLDINGS_CAP` of 15 full `ResearchPackage`s is far too much context for one
+call, and it would also make the "no math in the LLM" boundary harder to audit —
+every cross-holding number would need to be computed inside a single giant
+projection instead of the same small, testable functions the per-symbol path
+already uses. Digesting each package to ~20 fields first
+(`digestOf` in `web/lib/agent/portfolioMetrics.ts`) keeps the model's input
+small and keeps every derived number in TypeScript, tested in
+`web/tests/portfolio.test.ts` against hand-built fixtures.
+
+### Why there is no ranked "riskiest holdings" list
+
+This is the place the project's founding rule — concentration, breadth and
+persistence reported separately, never one severity score — is most tempting to
+break. "Which of my holdings is riskiest?" is one combined score wearing a
+different hat. `computeStandouts` returns three independent lists instead, one
+per component, each naming which holdings moved furthest from *their own*
+baseline on *that* component; a holding whose persistence could not be measured
+appears in `not_measured`, never silently absent and never implicitly "fine".
+No exported function in `portfolioMetrics.ts` takes more than one component as
+input, and a test asserts exactly that shape.
+
+### The keyword-matched Ask panel
+
+`web/lib/ask/answer.ts`'s keyword matcher was tracked as a known gap in
+`CLAUDE.md`. `askPortfolioFollowUp` now answers from the saved
+`portfolio_runs.package` through the same `answerFollowUp` the per-symbol chat
+already used — real narration, not string matching — once a portfolio summary
+exists. The matcher stays as the pre-first-run fallback rather than being
+deleted, since there's nothing saved yet to ground an LLM answer in.
+
+### Scope
+
+Built: `portfolio.ts`/`portfolioMetrics.ts`, `portfolioReport.ts`,
+`portfolio_runs` (migration `0007`), `PortfolioReportView`, wiring in
+`app/(review)/page.tsx`, every overview row made clickable (not only flagged
+ones), `RunReviewBar` staying mounted on a clean run so the research log is
+still inspectable, and the Ask panel pointed at real narration.
+
+Deliberately not built: deriving `isFlagged` from real `serve_components`
+instead of the two-symbol fixture — still a real gap (the "N flagged" count can
+mislead), but a scoring-side change to the batch, and no longer able to hide a
+report since navigation no longer depends on it.
+
+Verified: `tsc --noEmit`, `eslint`, `next build` clean; 148 Python tests still
+green; 32 vitest tests (8 new, over hand-built package fixtures) including one
+that asserts no function in `portfolioMetrics.ts` combines two components into
+a single score.

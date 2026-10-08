@@ -26,6 +26,8 @@ The implementation currently supports:
 * Accepted BBCA one-day qualification under the demo operational policy
 * Offline loading and validation of the frozen demo universe configuration
 * Draft `serve_alert` / `serve_alert_evidence` contract and deterministic fixture validation
+* Daily close ingestion for the frozen ten-symbol universe (`sectors/prices.py`), archived and replayable offline
+* Supabase results publication (`sectors/publish.py`) over the committed schema in `supabase/migrations/`
 
 ### Verification completed
 
@@ -89,12 +91,19 @@ which is consistent with exactly one broker changing classification from institu
 | BBCA one-day qualification                    | Complete and accepted for demo operational policy; external completeness unproven |
 | Demo universe and fixed end date              | Frozen; [scope and initial lookback](docs/demo-scope.md) |
 | API credit grant                             | 1,000 hackathon team credits according to official competition rules, as supplied in the project decision |
-| Endpoint credit consumption and rate limits   | Pending confirmation; not independently established |
+| Endpoint credit consumption and rate limits   | Verified per-endpoint from `docs.sectors.app` (see `AGENTS.md`'s billing table); a live account balance is still unconfirmed |
 | `serve_*` contract with Harfi                 | Under review: `1.0.0-draft.1`; not yet stable |
 | `serve_alert.json` / `serve_alert_evidence.json` fixtures | Complete: hand-written synthetic contract examples; no actual scored output |
-| Multi-stock ingestion                        | Pending                                     |
-| Scoring                                      | Pending                                     |
-| Connect application / Run Scan flow           | Pending                                     |
+| Results-table schema committed                | Complete: `supabase/migrations/`, documented in [results schema](docs/results-schema.md) |
+| Daily close ingestion (10 symbols, 90-day window) | Complete: `python -m sectors ingest-prices`; 1 API credit per symbol |
+| Publication to Supabase                       | Complete: `python -m sectors publish`; upserts, re-runnable |
+| Multi-stock broker-flow ingestion             | Complete and **run live**: `python -m sectors ingest-flow --live` (`sectors/flow.py`), 70 credits, all 10 symbols x 61 sessions cached in `data/flow-cache/` |
+| Scoring                                      | Complete and **run on live data**: `python -m sectors score-flow` (`sectors/scoring.py`) — concentration/breadth/persistence/coverage, reported separately, never combined |
+| Publish broker-flow results                   | Complete: `python -m sectors publish-flow` → `serve_components` / `serve_flow_series` (`supabase/migrations/0004_flow_results.sql`); 10 + 40 real `MEASURED` rows live |
+| Per-company research pipeline                 | Complete: cached, credit-metered server-side Sectors client (`web/lib/sectors/`), projections and metrics (`web/lib/research/`, `web/lib/agent/`), sectioned report (`web/lib/llm/report.ts`) |
+| Portfolio-wide summary                        | Complete: a second synthesis pass over the run's per-symbol packages at **zero extra credits** (`web/lib/agent/portfolio.ts`, `web/lib/llm/portfolioReport.ts`), saved to `portfolio_runs` (`supabase/migrations/0007`) and rendered on the dashboard itself — three independent concentration/breadth/persistence standout lists, never a combined score |
+| Streaming research log                        | Not built: `runPipeline` yields step events and the UI shows the real post-hoc trace, but events are not streamed live yet |
+| Connect application / Run Scan flow           | Partial: Run Analyst reads real scored components when present, falls back to the two-symbol fixture otherwise |
 
 ### Current scope
 
@@ -121,7 +130,7 @@ With the demo universe frozen, the next steps are:
 3. Resolve the initial lookback from verified IDX trading dates.
 4. Review the draft `serve_*` contract and deterministic examples with Harfi.
 5. Agree scoring semantics, historical cohort mapping, and publication/freshness behavior before stabilizing the contract.
-6. Build market-data ingestion and raw persistence.
+6. Extend ingestion from daily close to multi-stock, multi-day broker flow.
 7. Implement scoring on top of the verified ingestion foundation.
 
 
@@ -326,3 +335,89 @@ python -m sectors qualify-day --observation data/daily-cache/6a6d9628-635f-4a9c-
 
 No new requests, scoring, serving tables, or multi-symbol ingestion are added by
 this policy change. Broader ingestion and `serve_*` outputs remain separate work.
+
+
+## Daily close ingestion and publication
+
+Real closing prices for the frozen ten-symbol universe, used by the application's
+portfolio valuation. Ingestion and publication are separate commands so a batch can
+be inspected before anything is written to Supabase.
+
+```bash
+python -m sectors ingest-prices --live      # 1 API credit per symbol; 10 total
+python -m sectors ingest-prices             # replay the cache; no network
+python -m sectors publish                   # upsert the results file into Supabase
+```
+
+`ingest-prices` requests `https://api.sectors.app/v2/daily/{symbol}/` once per symbol
+over a 90-day window ending at the frozen demo date, which is the widest window the
+endpoint serves in one call. The whole-market daily-close endpoint is deliberately not
+used: it is paginated over the full ~950-ticker universe and costs roughly 32 credits
+per day pulled.
+
+Bodies are archived under `--cache` before decoding, with the same
+`body.bin` + `metadata.json` provenance the registry and broker-summary paths use, so
+a run can be replayed offline and re-verified by checksum. Without `--live` the command
+never reaches the network.
+
+A symbol the provider returns nothing for is published `UNAVAILABLE` with
+`PRICE_NOT_YET_INGESTED`, never as zero, and a session the provider omits stays absent
+from the series rather than being interpolated.
+
+## Broker-flow ingestion and scoring
+
+Real concentration/breadth/persistence/coverage for the frozen ten-symbol universe,
+against each symbol's own baseline within the ingested window. Three separate commands
+— acquire, score, publish — so each stage can be inspected before the next runs.
+
+```bash
+python -m sectors ingest-flow --live        # ~7 chunks/symbol, ~70 credits for all 10
+python -m sectors ingest-flow               # replay the cache; no network
+python -m sectors score-flow                # compute components/flow-series from the flow report
+python -m sectors publish-flow              # upsert into serve_components / serve_flow_series
+```
+
+`ingest-flow` requests `https://api.sectors.app/v2/broker-summary/{symbol}/` in <=14-day
+chunks (the provider's documented range maximum) per symbol over the same window
+`ingest-prices` uses, archiving bodies the same way. `score-flow` reads that report and
+`data/sectors.sqlite3`'s current broker registry (for cohort classification), and writes
+concentration (CR3 of sell value), breadth (brokers whose net side flipped), persistence
+(trailing-window direction match), and coverage (share of sell value from a classifiable
+broker) — each reported independently, per `CLAUDE.md`'s founding rule; there is no
+combined score anywhere in this path. A block that cannot be computed (too short a
+window, no sell value that day) is `UNAVAILABLE`, never a fabricated zero.
+
+Requires a real, non-synthetic `dim_broker` registry (`python -m sectors registry
+--live`) before `score-flow` will run — cohort classification with no verified registry
+is refused rather than guessed.
+
+### Environment
+
+| Variable | Used by | Notes |
+| --- | --- | --- |
+| `SECTORS_API_KEY` | `ingest-prices --live`, `ingest-flow --live`, and the web server's research pipeline | Same key the registry and qualification paths use. The web copy lives in `web/.env.local`; it is read server-side only and never reaches the browser. |
+| `SUPABASE_URL` | `publish`, `publish-flow` | Project URL, `https://…supabase.co`. |
+| `SUPABASE_SERVICE_ROLE_KEY` | `publish`, `publish-flow` | Bypasses row level security. Python batch only — never place it under `web/` or in a `NEXT_PUBLIC_*` variable. |
+| `OPENROUTER_API_KEY` | Run Analyst narration (`web/lib/llm/`) | Server-only. |
+| `SECTORS_RUN_CREDIT_CEILING` | Research pipeline (`web/lib/sectors/cache.ts`) | Optional, default 25. Hard cap on Sectors credits one Run Analyst pass may spend per symbol; steps past it are marked `skipped`, never silently dropped. |
+
+Both publication variables are read at call time and validated before any request is
+made, so a missing key fails without touching the network.
+
+### Research pipeline credits
+
+One Run Analyst pass over a cold cache costs about **11 credits per symbol**: 1 overview,
+1 financials, 3 valuation/future/dividend, 1 peers, 3 subsector, 3 nearby context. Every
+response is cached in `public.sectors_cache` keyed by `(endpoint, params_hash)`, so a
+repeated pass over the same symbol costs **0**, and symbols sharing a subsector (the four
+banks in the demo universe) pay for the subsector report once between them.
+
+`web/tests/live.test.ts` checks the request paths against the live API. It is skipped by
+default; run it with `SECTORS_LIVE=1 SECTORS_API_KEY=… pnpm test` from `web/` if a report
+section starts coming back UNAVAILABLE, since that is what a renamed provider path looks
+like from the UI.
+
+The portfolio-wide summary that follows a full run (`web/lib/agent/portfolio.ts`,
+`web/lib/llm/portfolioReport.ts`) costs **0 additional credits**: it is a synthesis pass
+over the `ResearchPackage`s the per-symbol loop already built and cached, not a new set of
+Sectors calls.

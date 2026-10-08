@@ -1,0 +1,51 @@
+{
+  "contract_version": "1.1.0-draft.1",
+  "contract_status": "UNDER_REVIEW",
+  "output": "serve_narrative",
+  "data_kind": "SYNTHETIC_EXAMPLE",
+  "description": "Hand-written narration examples for BBCA and ANTM, each grounded only in field paths present in the other 1.1.0-draft.1 outputs for the same symbol/date. ANTM's narrative omits any breadth figure because that block is unavailable this run — a concrete demonstration of the LLM-cannot-state-what-it-was-not-given rule.",
+  "records": [
+    {
+      "symbol": "BBCA",
+      "trade_date": "2026-09-09",
+      "paragraphs": [
+        "Over the 20 sessions ending 2026-09-09, the institutional cohort bought Rp 100,000,000 and sold Rp 140,000,000, a net of −Rp 40,000,000. The retail cohort ran the other way: Rp 80,000,000 bought against Rp 60,000,000 sold, a net of +Rp 20,000,000. The mixed cohort was flat at Rp 20,000,000 on both sides. The unknown cohort has no values for this window, so 92% of traded value is what these figures cover.",
+        "On the component view, sell value was concentrated — 61% sat with three brokers against a 38% baseline — while breadth stayed narrower, at 9 of 41 active brokers. Direction repeated in 6 of the last 10 sessions, with a longest run of 3.",
+        "This describes observed broker activity in BBCA. It is not a statement about price, and no cause is attributed to any outside event."
+      ],
+      "grounded_in": [
+        "serve_alert_evidence.buy_value",
+        "serve_alert_evidence.sell_value",
+        "serve_alert_evidence.net_value",
+        "serve_components.coverage.matched_share",
+        "serve_components.concentration.share",
+        "serve_components.concentration.baseline_share",
+        "serve_components.breadth.changed",
+        "serve_components.breadth.active",
+        "serve_components.persistence.same_direction",
+        "serve_components.persistence.of_sessions",
+        "serve_components.persistence.longest_run"
+      ]
+    },
+    {
+      "symbol": "ANTM",
+      "trade_date": "2026-09-09",
+      "paragraphs": [
+        "Over the 20 sessions ending 2026-09-09, the institutional cohort bought Rp 64,000,000 and sold Rp 91,000,000, a net of −Rp 27,000,000. The retail cohort bought Rp 52,000,000 against Rp 41,000,000 sold, a net of +Rp 11,000,000. The mixed cohort was flat at Rp 15,000,000 on both sides. The unknown cohort has no values for this window, so 88% of traded value is what these figures cover.",
+        "On the component view, sell value was concentrated — 55% sat with three brokers against a 33% baseline. Breadth could not be computed this run and is shown as unavailable, not as zero brokers changing side. Direction repeated in 5 of the last 10 sessions, with a longest run of 2.",
+        "This describes observed broker activity in ANTM. It is not a statement about price, and no cause is attributed to any outside event."
+      ],
+      "grounded_in": [
+        "serve_alert_evidence.buy_value",
+        "serve_alert_evidence.sell_value",
+        "serve_alert_evidence.net_value",
+        "serve_components.coverage.matched_share",
+        "serve_components.concentration.share",
+        "serve_components.concentration.baseline_share",
+        "serve_components.persistence.same_direction",
+        "serve_components.persistence.of_sessions",
+        "serve_components.persistence.longest_run"
+      ]
+    }
+  ]
+}

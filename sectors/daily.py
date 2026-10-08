@@ -34,6 +34,16 @@ NONNEGATIVE_FIELDS = (INTEGER_FIELDS - {"nlot", "nval"}) | {"bavg_per_share", "s
 META_FIELDS = {"observation_id", "requested_symbol", "requested_trade_date", "retrieved_at",
                "endpoint", "request_url", "http_status", "sha256", "source", "content_encoding"}
 
+# Every encoding an archived body may legitimately carry. "unsupported" is a
+# legacy marker: observations captured before zstd was recognised recorded it
+# instead of the real header, so `decoded_json` sniffs those by magic number
+# rather than forcing a re-fetch of bytes we already paid a credit for.
+ARCHIVE_ENCODINGS = {"identity", "gzip", "deflate", "zstd", "unsupported"}
+# What the transport is willing to record from a live Content-Encoding header.
+TRANSPORT_ENCODINGS = {"identity", "gzip", "deflate", "zstd"}
+# Leading bytes that identify a compressed body whose declared encoding was lost.
+MAGIC_NUMBERS = ((b"\x28\xb5\x2f\xfd", "zstd"), (b"\x1f\x8b", "gzip"))
+
 
 def load_evidence(path: Path = EVIDENCE_PATH) -> dict:
     evidence = strict_json(Path(path).read_bytes())
@@ -65,7 +75,7 @@ def archive(cache: Path, body: bytes, status: int, *, source: str = "live",
             retrieved_at: str | None = None, content_encoding: str = "identity") -> tuple[Path, dict]:
     if type(status) is not int or not 100 <= status <= 599 or source not in {"live", "local", "synthetic"}:
         raise RegistryError("INVALID_DAILY_PROVENANCE")
-    if content_encoding not in {"identity", "gzip", "deflate", "unsupported"}:
+    if content_encoding not in ARCHIVE_ENCODINGS:
         raise RegistryError("INVALID_CONTENT_ENCODING")
     meta = {"observation_id": str(uuid.uuid4()), "requested_symbol": SYMBOL,
             "requested_trade_date": TRADE_DATE, "retrieved_at": utc_timestamp(retrieved_at or now_utc()),
@@ -91,7 +101,7 @@ def load_observation(directory: Path) -> tuple[dict, bytes]:
             raise RegistryError("UNSUPPORTED_TEST_CASE: observation identity differs from the fixed request")
         if type(meta["http_status"]) is not int or not 100 <= meta["http_status"] <= 599:
             raise ValueError
-        if meta["source"] not in {"live", "local", "synthetic"} or meta["content_encoding"] not in {"identity", "gzip", "deflate", "unsupported"}:
+        if meta["source"] not in {"live", "local", "synthetic"} or meta["content_encoding"] not in ARCHIVE_ENCODINGS:
             raise ValueError
         meta["retrieved_at"] = utc_timestamp(meta["retrieved_at"])
         body = (Path(directory) / "body.bin").read_bytes()
@@ -102,13 +112,44 @@ def load_observation(directory: Path) -> tuple[dict, bytes]:
         raise RegistryError("INVALID_DAILY_OBSERVATION") from None
 
 
-def decoded_json(meta: dict, body: bytes):
+def sniff_encoding(body: bytes) -> str:
+    """Identify a compressed body by magic number, for archives that lost the header.
+
+    Only consulted when the manifest says "unsupported". A wrong guess cannot
+    fabricate data: decompression fails, or `strict_json` rejects the result.
+    """
+    for magic, encoding in MAGIC_NUMBERS:
+        if body.startswith(magic):
+            return encoding
+    return "identity"
+
+
+def decompress_zstd(body: bytes) -> bytes:
     try:
-        if meta["content_encoding"] == "gzip":
+        from compression import zstd  # Python 3.14+ stdlib
+    except ImportError:
+        raise RegistryError(
+            "CONTENT_ENCODING_UNSUPPORTED: zstd needs Python 3.14+; original bytes remain archived"
+        ) from None
+    try:
+        return zstd.decompress(body)
+    except zstd.ZstdError:
+        # Not an OSError subclass, so it would otherwise escape the caller's handler.
+        raise RegistryError("CONTENT_DECODING_FAILED: original bytes remain archived") from None
+
+
+def decoded_json(meta: dict, body: bytes):
+    encoding = meta["content_encoding"]
+    if encoding == "unsupported":
+        encoding = sniff_encoding(body)
+    try:
+        if encoding == "gzip":
             body = gzip.decompress(body)
-        elif meta["content_encoding"] == "deflate":
+        elif encoding == "deflate":
             body = zlib.decompress(body)
-        elif meta["content_encoding"] != "identity":
+        elif encoding == "zstd":
+            body = decompress_zstd(body)
+        elif encoding != "identity":
             raise RegistryError("CONTENT_ENCODING_UNSUPPORTED: original bytes remain archived")
     except (OSError, EOFError, zlib.error):
         raise RegistryError("CONTENT_DECODING_FAILED: original bytes remain archived") from None
@@ -123,8 +164,13 @@ def fetch_daily(cache: Path, evidence: dict, *, timeout: float = 30, retries: in
 
 
 def fetch_observation(cache: Path, params: dict, archive_response, *, timeout: float = 30,
-                      retries: int = 2, get=None, sleep=time.sleep) -> Path:
-    """Shared daily transport; caller validates its fixed calendar/request first."""
+                      retries: int = 2, get=None, sleep=time.sleep, endpoint: str | None = None) -> Path:
+    """Shared daily transport; caller validates its fixed calendar/request first.
+
+    `endpoint` defaults to this module's broker-summary URL, so existing callers
+    are unaffected. Other modules requesting a different Sectors endpoint pass
+    their own; the archive callable still records whichever URL was used.
+    """
     if not math.isfinite(timeout) or not 0 < timeout <= 60 or not 0 <= retries <= 3:
         raise RegistryError("INVALID_FETCH_OPTIONS: timeout (0, 60]; retries 0..3")
     key = os.environ.get("SECTORS_API_KEY")
@@ -138,15 +184,16 @@ def fetch_observation(cache: Path, params: dict, archive_response, *, timeout: f
     except ImportError:
         raise RegistryError("MISSING_HTTP_DEPENDENCY: install requirements.txt") from None
     get = get or requests.get
+    url = endpoint or ENDPOINT
     for attempt in range(retries + 1):
         try:
-            with get(ENDPOINT, params=params, headers={"Authorization": key, "Accept": "application/json"},
+            with get(url, params=params, headers={"Authorization": key, "Accept": "application/json"},
                      timeout=timeout, allow_redirects=False, stream=True) as response:
                 status = response.status_code
                 # Preserve the entity body exactly as received, including gzip.
                 body = response.raw.read(decode_content=False)
                 encoding = response.headers.get("Content-Encoding", "identity").lower().strip()
-                encoding = encoding if encoding in {"identity", "gzip", "deflate"} else "unsupported"
+                encoding = encoding if encoding in TRANSPORT_ENCODINGS else "unsupported"
                 retry_after = response.headers.get("Retry-After")
         except (requests.RequestException, TransportReadError, OSError):
             if attempt == retries:

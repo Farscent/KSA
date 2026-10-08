@@ -1,0 +1,117 @@
+{
+  "contract_version": "1.1.0-draft.1",
+  "contract_status": "UNDER_REVIEW",
+  "output": "serve_components",
+  "data_kind": "SYNTHETIC_EXAMPLE",
+  "description": "Hand-written severity-component examples for BBCA and ANTM. Concentration, breadth, and persistence are labelled EXAMPLE_VALUE because scoring is not finalised; only coverage is MEASURED. Reported separately per symbol; there is no combined severity score. ANTM's breadth block is deliberately unavailable to exercise that path with real fixture data.",
+  "records": [
+    {
+      "symbol": "BBCA",
+      "trade_date": "2026-09-09",
+      "scoring_status": "PENDING_DEFINITION",
+      "concentration": {
+        "basis": "EXAMPLE_VALUE",
+        "value_status": "AVAILABLE",
+        "reason_codes": [],
+        "top_n": 3,
+        "share": 0.61,
+        "baseline_share": 0.38,
+        "band": 3,
+        "band_count": 5
+      },
+      "breadth": {
+        "basis": "EXAMPLE_VALUE",
+        "value_status": "AVAILABLE",
+        "reason_codes": [],
+        "changed": 9,
+        "active": 41,
+        "share": 0.2195,
+        "baseline_share": 0.11
+      },
+      "persistence": {
+        "basis": "EXAMPLE_VALUE",
+        "value_status": "AVAILABLE",
+        "reason_codes": [],
+        "same_direction": 6,
+        "of_sessions": 10,
+        "longest_run": 3,
+        "session_flags": [
+          false,
+          true,
+          true,
+          false,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true
+        ]
+      },
+      "coverage": {
+        "basis": "MEASURED",
+        "value_status": "AVAILABLE",
+        "reason_codes": [],
+        "matched_share": 0.92,
+        "cohorts_available": 3,
+        "cohorts_total": 4,
+        "completeness": "PARTIAL"
+      }
+    },
+    {
+      "symbol": "ANTM",
+      "trade_date": "2026-09-09",
+      "scoring_status": "PENDING_DEFINITION",
+      "concentration": {
+        "basis": "EXAMPLE_VALUE",
+        "value_status": "AVAILABLE",
+        "reason_codes": [],
+        "top_n": 3,
+        "share": 0.55,
+        "baseline_share": 0.33,
+        "band": 3,
+        "band_count": 5
+      },
+      "breadth": {
+        "basis": "EXAMPLE_VALUE",
+        "value_status": "UNAVAILABLE",
+        "reason_codes": [
+          "BREADTH_NOT_COMPUTED"
+        ],
+        "changed": null,
+        "active": null,
+        "share": null,
+        "baseline_share": null
+      },
+      "persistence": {
+        "basis": "EXAMPLE_VALUE",
+        "value_status": "AVAILABLE",
+        "reason_codes": [],
+        "same_direction": 5,
+        "of_sessions": 10,
+        "longest_run": 2,
+        "session_flags": [
+          true,
+          false,
+          true,
+          false,
+          false,
+          true,
+          true,
+          false,
+          true,
+          false
+        ]
+      },
+      "coverage": {
+        "basis": "MEASURED",
+        "value_status": "AVAILABLE",
+        "reason_codes": [],
+        "matched_share": 0.88,
+        "cohorts_available": 3,
+        "cohorts_total": 4,
+        "completeness": "PARTIAL"
+      }
+    }
+  ]
+}
