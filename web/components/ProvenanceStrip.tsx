@@ -1,9 +1,16 @@
-import { getRun } from "@/lib/data/source";
+import type { FlowWindow } from "@/lib/data/window";
 import type { CoverageBlock } from "@/lib/contract/types";
 import { Value } from "@/components/Value";
 
-export function ProvenanceStrip({ coverage }: { coverage: CoverageBlock }) {
-  const run = getRun();
+export function ProvenanceStrip({
+  coverage,
+  tradeDate,
+  window,
+}: {
+  coverage: CoverageBlock;
+  tradeDate: string;
+  window: FlowWindow | null;
+}) {
 
   const cell = (label: string, node: React.ReactNode, color?: string) => (
     <>
@@ -27,9 +34,8 @@ export function ProvenanceStrip({ coverage }: { coverage: CoverageBlock }) {
       className="flex flex-wrap items-center border-b"
       style={{ background: "var(--color-surface)", borderColor: "var(--color-line)" }}
     >
-      {cell("Data date", run.data_date)}
-      {cell("Trade date", run.trade_date)}
-      {cell("Window", `${run.window.sessions} sessions · ${run.window.start} → ${run.window.end}`)}
+      {cell("Trade date", tradeDate)}
+      {window && cell("Window", `${window.sessions} sessions · ${window.start} → ${window.end}`)}
       {cell(
         "Coverage",
         <>

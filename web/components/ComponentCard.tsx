@@ -63,7 +63,7 @@ export function ConcentrationCard({ block }: { block: ConcentrationBlock }) {
   return (
     <CardShell
       title="Concentration"
-      basisLabel="example"
+      basisLabel={block.basis === "MEASURED" ? "measured" : "example"}
       headline={<Value value={block.share} format="pct" />}
       caption={`of sell value in top ${block.top_n ?? "n"} brokers`}
       bar={segmentBar(block.band, block.band_count)}
@@ -85,7 +85,7 @@ export function BreadthCard({ block }: { block: BreadthBlock }) {
   return (
     <CardShell
       title="Breadth"
-      basisLabel="example"
+      basisLabel={block.basis === "MEASURED" ? "measured" : "example"}
       headline={available ? `${block.changed} / ${block.active}` : "unavailable"}
       caption="brokers changed side"
       bar={
@@ -114,7 +114,7 @@ export function PersistenceCard({ block }: { block: PersistenceBlock }) {
   return (
     <CardShell
       title="Persistence"
-      basisLabel="example"
+      basisLabel={block.basis === "MEASURED" ? "measured" : "example"}
       headline={available ? `${block.same_direction} / ${block.of_sessions}` : "unavailable"}
       caption="sessions same direction"
       bar={
@@ -124,7 +124,7 @@ export function PersistenceCard({ block }: { block: PersistenceBlock }) {
           ))}
         </div>
       }
-      footnote={available ? <>Longest run {block.longest_run} sessions {"·"} oldest at left</> : "Not computed this run"}
+      footnote={available ? <>Longest run {block.longest_run} {block.longest_run === 1 ? "session" : "sessions"} {"·"} oldest at left</> : "Not computed this run"}
     />
   );
 }

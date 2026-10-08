@@ -31,7 +31,8 @@ export function HeaderBar() {
     router.push("/login");
   }
   const segments = pathname.split("/").filter(Boolean);
-  const symbol = segments[0] && segments[0] !== "holdings" ? segments[0].toUpperCase() : null;
+  const isHistory = segments[0] === "history";
+  const symbol = segments[0] && segments[0] !== "holdings" && !isHistory ? segments[0].toUpperCase() : null;
   const isPeers = segments[1] === "peers";
 
   return (
@@ -41,12 +42,17 @@ export function HeaderBar() {
     >
       <div className="flex items-baseline gap-3.5">
         <span className="font-serif text-sm font-medium">Sectors Review</span>
-        {!symbol && (
+        {!symbol && !isHistory && (
           <span
             className="font-mono text-[10.5px] uppercase"
             style={{ color: "var(--color-header-muted)", letterSpacing: "0.08em" }}
           >
             Portfolio review engine
+          </span>
+        )}
+        {isHistory && (
+          <span className="font-mono text-[10.5px]" style={{ color: "var(--color-header-muted)" }}>
+            Portfolio / History
           </span>
         )}
         {symbol && !isPeers && (

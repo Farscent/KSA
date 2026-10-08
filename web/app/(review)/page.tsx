@@ -14,7 +14,9 @@ import { PortfolioReportView } from "@/components/PortfolioReportView";
 import { AskPanel } from "@/components/AskPanel";
 import { DisclaimerFooter } from "@/components/DisclaimerFooter";
 import Link from "next/link";
-import { useResults, usePortfolioRun, usePortfolioRunHistory } from "@/lib/data/ResultsProvider";
+import { useResults, usePortfolioRun } from "@/lib/data/ResultsProvider";
+import { SIGNAL_LABEL } from "@/lib/flowStatus";
+import { savedVerdict } from "@/lib/verdict";
 import { summarisePortfolio } from "@/lib/agent/actions";
 import { runAnalystStream } from "@/lib/agent/streamClient";
 import type { ReportSection } from "@/lib/llm/portfolioReport";
@@ -37,43 +39,42 @@ export default function DashboardPage() {
   const [outcomes, setOutcomes] = useState<RunOutcome[]>([]);
   const [inFlightSymbol, setInFlightSymbol] = useState<string | null>(null);
   const [liveSteps, setLiveSteps] = useState<StepEvent[]>([]);
+  const [summarising, setSummarising] = useState(false);
   const [summary, setSummary] = useState<PortfolioSummaryState | null>(null);
   const [summaryError, setSummaryError] = useState<string | null>(null);
-  const { positions, priceHistory, run, agentRunOf } = useResults();
+  const { positions, priceHistory, run, agentRunOf, componentsOf } = useResults();
   const savedPortfolioRun = usePortfolioRun();
-  const portfolioRunHistory = usePortfolioRunHistory();
-  const [selectedPortfolioRunAt, setSelectedPortfolioRunAt] = useState<string | null>(null);
 
-  const rows = useMemo(() => buildRows(holdings, positions), [holdings, positions]);
+  const rows = useMemo(
+    () => buildRows(holdings, positions, agentRunOf, (sym) => componentsOf(sym)?.trade_date ?? null),
+    [holdings, positions, agentRunOf, componentsOf]
+  );
   const totals = useMemo(() => computeTotals(rows), [rows]);
   const series = useMemo(() => computeValueSeries(holdings, priceHistory), [holdings, priceHistory]);
-  const flaggedRows = rows.filter((r) => r.flagged);
 
-  // An explicit "Past runs" selection wins first — otherwise picking an older
-  // entry would silently do nothing once a fresh summary exists. Absent a
-  // selection, the freshly-run summary takes priority; otherwise the latest
-  // saved run, so a reload doesn't lose it. Symbols not held any more are
-  // dropped from the per-holding strip rather than left dangling.
-  const selectedPastRun = selectedPortfolioRunAt
-    ? portfolioRunHistory.find((r) => r.created_at === selectedPortfolioRunAt)
-    : savedPortfolioRun;
-  const activeSummary = selectedPortfolioRunAt
-    ? selectedPastRun
+  // Status comes from the saved runs, not from this session's click, so a
+  // reload keeps it. Components stay separate: no combined count of "how bad".
+  const reviewedRows = rows.filter((r) => r.status.kind !== "not_reviewed");
+  const outdatedCount = rows.filter((r) => r.status.kind === "outdated").length;
+  const crossedRows = rows.filter((r) => r.status.kind === "reviewed" && r.status.crossed.length > 0);
+  const crossedLines = crossedRows.map((r) =>
+    r.status.kind === "reviewed" ? `${r.sym} (${r.status.crossed.map((n) => SIGNAL_LABEL[n]).join(", ")})` : r.sym
+  );
+
+  // The freshly-run summary wins while this tab still holds it; otherwise the
+  // latest saved run, so a reload doesn't lose it. Older runs live under
+  // /history, never on this page. Symbols no longer held are dropped from the
+  // per-holding strip rather than left dangling.
+  const activeSummary: PortfolioSummaryState | null =
+    summary ??
+    (savedPortfolioRun
       ? {
-          sections: selectedPastRun.sections,
-          credits_used: selectedPastRun.credits_used ?? 0,
-          duration_ms: selectedPastRun.duration_ms ?? 0,
-          symbols: selectedPastRun.symbols,
+          sections: savedPortfolioRun.sections,
+          credits_used: savedPortfolioRun.credits_used ?? 0,
+          duration_ms: savedPortfolioRun.duration_ms ?? 0,
+          symbols: savedPortfolioRun.symbols,
         }
-      : null
-    : summary ?? (selectedPastRun
-        ? {
-            sections: selectedPastRun.sections,
-            credits_used: selectedPastRun.credits_used ?? 0,
-            duration_ms: selectedPastRun.duration_ms ?? 0,
-            symbols: selectedPastRun.symbols,
-          }
-        : null);
+      : null);
   const summaryHoldingLines = (activeSummary?.symbols ?? [])
     .filter((sym) => holdings.some((h) => h.sym === sym))
     .map((sym) => {
@@ -81,7 +82,7 @@ export default function DashboardPage() {
       const flowSection = agentRun?.sections?.find((s) => s.id === "flow_structure");
       return {
         symbol: sym,
-        verdict: agentRun?.verdict ?? "Healthy",
+        verdict: agentRun ? savedVerdict(agentRun) : "Healthy",
         detail: flowSection?.paragraphs[0] ?? "no flow section",
       };
     });
@@ -91,23 +92,27 @@ export default function DashboardPage() {
     setOutcomes([]);
     setSummary(null);
     setSummaryError(null);
-    setSelectedPortfolioRunAt(null);
     // Sequential, not Promise.all: each symbol's research spends credits
     // against a shared budget, and running ten in parallel also runs ten
     // concurrent Sectors calls straight into the rate limiter.
+    const runId = crypto.randomUUID();
     const collected: RunOutcome[] = [];
     const packages: ResearchPackage[] = [];
     for (const holding of holdings) {
       setInFlightSymbol(holding.sym);
       setLiveSteps([]);
-      const result = await runAnalystStream(holding.sym, (event) => {
-        if (event.type !== "step") return;
-        setLiveSteps((prev) => {
-          const next = prev.filter((s) => s.id !== event.id);
-          next.push(event);
-          return next;
-        });
-      });
+      const result = await runAnalystStream(
+        holding.sym,
+        (event) => {
+          if (event.type !== "step") return;
+          setLiveSteps((prev) => {
+            const next = prev.filter((s) => s.id !== event.id);
+            next.push(event);
+            return next;
+          });
+        },
+        runId
+      );
       collected.push(
         result.ok
           ? {
@@ -123,13 +128,14 @@ export default function DashboardPage() {
     }
     setInFlightSymbol(null);
     setLiveSteps([]);
-    setRunState("reviewRun");
 
     // The synthesis pass: zero extra Sectors credits, reads the packages
     // just built above. It is the point of the button — a portfolio review
     // should produce something about the portfolio, not just per-symbol rows.
     if (packages.length > 0) {
-      const result = await summarisePortfolio(packages, run?.window.sessions ?? null);
+      setSummarising(true);
+      const result = await summarisePortfolio(packages, run?.window.sessions ?? null, runId);
+      setSummarising(false);
       if (result.ok) {
         setSummary({
           sections: result.sections,
@@ -141,6 +147,7 @@ export default function DashboardPage() {
         setSummaryError(result.error);
       }
     }
+    setRunState("reviewRun");
 
     // Pulls the run(s) just saved into agentRuns/agentRunHistory/portfolioRun/
     // portfolioRunHistory — without this, the dashboard stays on whatever
@@ -187,52 +194,51 @@ export default function DashboardPage() {
         outcomes={outcomes}
         inFlightSymbol={inFlightSymbol ?? undefined}
         liveSteps={liveSteps}
+        summarising={summarising}
+        lastRunAt={savedPortfolioRun?.created_at ?? null}
       />
 
-      {runState === "reviewRun" && (
+      {runState !== "running" && (activeSummary || reviewedRows.length > 0 || summaryError) && (
         <div className="border-b bg-[var(--color-card)] px-7 pb-4.5 pt-6.5" style={{ borderColor: "var(--color-line)" }}>
           <div
-            className="font-mono text-[11px] uppercase text-[var(--color-muted)]"
+            className="flex flex-wrap items-baseline gap-x-3 font-mono text-[11px] uppercase text-[var(--color-muted)]"
             style={{ letterSpacing: "0.1em" }}
           >
-            Review run {"·"} {run ? run.trade_date : "no batch run yet"}
+            <span>
+              {savedPortfolioRun
+                ? `Reviewed ${new Date(savedPortfolioRun.created_at).toLocaleString()}`
+                : "Review"}
+              {" · data "}
+              {savedPortfolioRun?.as_of ?? (run ? run.trade_date : "no batch run yet")}
+            </span>
+            <Link href="/history" className="normal-case underline" style={{ letterSpacing: 0, color: "var(--color-accent)" }}>
+              Past runs
+            </Link>
           </div>
           <div className="mt-1.5 font-serif text-[22px] text-[var(--color-ink)]">
-            {holdings.length} holdings reviewed {"·"}{" "}
-            <span style={{ color: "var(--color-accent)" }}>{flaggedRows.length} flagged for review</span>
+            {reviewedRows.length} of {holdings.length} holdings reviewed {"·"}{" "}
+            <span style={{ color: "var(--color-accent)" }}>
+              {crossedRows.length === 0 ? "no threshold crossed" : `${crossedRows.length} crossed a threshold`}
+            </span>
           </div>
+          {outdatedCount > 0 && (
+            <div className="mt-1 text-xs" style={{ color: "var(--color-warn)" }}>
+              {outdatedCount} {outdatedCount === 1 ? "holding is" : "holdings are"} outdated {"—"} the data date or your
+              position changed since the last run. Re-run Analyst to refresh.
+            </div>
+          )}
           <div className="mt-1.5 max-w-[640px] text-xs leading-relaxed" style={{ color: "var(--color-muted)" }}>
-            A holding is flagged when broker-flow structure changed against its own
-            {run ? ` ${run.window.sessions}-session` : ""} baseline. Flags describe observed trading
-            behaviour, not price expectations.
+            A component crosses its threshold when broker-flow structure moved against the stock{"'"}s own
+            {run ? ` ${run.window.sessions}-session` : ""} baseline. Concentration, breadth and persistence are
+            reported separately; they describe observed trading behaviour, not price expectations.
           </div>
           {/* Per-symbol failures are listed in RunReviewBar above, one line
               each, rather than collapsed into "at least one holding". */}
-          <AskPanel totals={totals} flaggedSymbols={flaggedRows.map((r) => r.sym)} hasSummary={activeSummary !== null} />
+          <AskPanel totals={totals} flaggedSymbols={crossedLines} hasSummary={activeSummary !== null} />
 
           {/* The point of the button: a portfolio-wide summary, not just a
               count. Concentration/breadth/persistence stay reported
               separately inside it — see lib/llm/portfolioReport.ts. */}
-          {portfolioRunHistory.length > 1 && (
-            <div className="mt-4 flex items-center gap-2 text-[11px]" style={{ color: "var(--color-muted)" }}>
-              <span className="font-mono uppercase" style={{ letterSpacing: "0.08em" }}>
-                Past runs
-              </span>
-              <select
-                value={selectedPastRun?.created_at ?? portfolioRunHistory[0].created_at}
-                onChange={(e) => setSelectedPortfolioRunAt(e.target.value)}
-                className="rounded-md border px-2 py-1 font-mono text-[11px]"
-                style={{ borderColor: "var(--color-line)", color: "var(--color-ink)", background: "var(--color-card)" }}
-              >
-                {portfolioRunHistory.map((r, i) => (
-                  <option key={r.created_at} value={r.created_at}>
-                    {new Date(r.created_at).toLocaleString()} {"·"} {r.symbols.length} holdings
-                    {i === 0 ? " (latest)" : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
           {activeSummary && (
             <PortfolioReportView
               sections={activeSummary.sections}
