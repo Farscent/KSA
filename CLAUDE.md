@@ -155,6 +155,25 @@ Kept in sync with `README.md` — check there for the authoritative checklist. A
   provenance and step trace (`supabase/migrations/0005`, `0006`). Valuation figures are
   **reported from Sectors with attribution, never predicted** — the "No price prediction"
   rule is unchanged.
+- **Readable report format.** Each Run Analyst section is a headline, a code-built fact
+  table (every figure formatted and compared to its baseline or peers in
+  `web/lib/agent/display.ts`) and at most three bullets. The model only reads finished rows
+  (`web/lib/llm/reading.ts`); its text is rejected if it contains a number not in those rows or
+  a phrase the compliance rules forbid (`web/lib/llm/grounding.ts`). Adds Earnings quality and
+  Balance sheet sections (banks report capital adequacy, loan-to-deposit, CASA, net interest
+  margin instead of cash-flow measures) and an Evidence coverage card, at zero extra credits.
+  Informed by three open-source references — see `docs/third-party-notices.md` and
+  `docs/decision-log.md`.
+- **Summary-first symbol page.** `/[symbol]` is a one-screen summary (finding, the three
+  flow components side by side, up to three standouts) built in code from the saved
+  report's rows (`web/lib/agent/summary.ts`, `web/components/SummaryCard.tsx`); the full
+  sections, coverage card and past-runs picker live on `/[symbol]/details`.
+- **Price header, chart and key stats.** `/[symbol]` opens with last close, day change, a
+  close + volume chart (TradingView's `lightweight-charts`, fed from `serve_price_history`)
+  and a key-stats panel built from the saved report's rows (`web/lib/price/overview.ts`,
+  `web/components/PriceChart.tsx`, `web/components/KeyStats.tsx`). Close only, so no
+  candlesticks; end-of-day, not live; zero Sectors credits. The chart is full width with a
+  compact key-stats grid below it; entrance motion is `animate-rise` in `globals.css`.
 - **Portfolio-wide summary.** Run Analyst used to review every holding but produce nothing
   about the portfolio as a whole — one line of text on the dashboard, with each report
   reachable only by clicking through to a flagged symbol. It now runs a second synthesis
@@ -171,28 +190,49 @@ Kept in sync with `README.md` — check there for the authoritative checklist. A
   a first run. Every holding row on the overview is clickable now, not only flagged ones —
   the per-symbol reports it links to were always real, just unreachable.
 
+- **Run status, saved-run dashboard and History.** The overview chip is now one of
+  `Not reviewed` / `Outdated` / the components that crossed their own threshold / `No
+  threshold crossed`, derived from the latest saved run's own components
+  (`web/lib/flowStatus.ts`) — concentration, breadth and persistence stay separate, `null`
+  means not measurable and is never shown as "not crossed". The verdict
+  (`web/lib/verdict.ts`) no longer needs a fixture alert, so it works for all ten symbols.
+  The dashboard reads the saved portfolio run, so a reload keeps it ("Re-run Analyst"). Past
+  runs moved to their own read-only area (`/history`, `/history/[runId]`,
+  `/history/[runId]/[symbol]`), rendered only from what each run saved; per-symbol reports
+  link to their portfolio run through `agent_runs.run_id` (`supabase/migrations/0009`). Stock
+  pages share Summary / Full analysis / Peers tabs and a per-symbol Run Analyst button.
+
+- **Live research step log.** `POST /api/analyst` (`web/app/api/analyst/route.ts`) streams
+  Server-Sent Events: a `step` event per research stage as it completes, a stream-only
+  "Writing report" step around narration and the save (`web/lib/agent/stream.ts`), then one
+  `result`. The browser reads it with `fetch` + a manual reader, not `EventSource`, because
+  auto-reconnect would re-run the pipeline (`web/lib/agent/streamClient.ts`). The dashboard
+  log (`RunReviewBar`) and the per-stock button show steps live; the bar stays "running"
+  through the portfolio summary. A closed tab does not abort a run: credits are already
+  spent, so it finishes and saves.
+
+- **Macro and policy headlines.** Run Analyst's last research step searches Tavily
+  (`web/lib/search/tavily.ts`, key `TAVILY_API_KEY`) for four fixed topics — BI rate,
+  inflation, rupiah, fiscal/market regulation — over the 30 days up to the review date, cached
+  per date window through the same `sectors_cache` table and shared by every symbol. Only
+  title, publisher, date and source URL are kept (`projectMacro`); no figure is extracted and
+  the snippet is dropped, so nothing is stated without its link. Shown as timing context in a
+  "Macro and policy backdrop" section, never as a cause. With no key the block stays
+  `UNAVAILABLE` / `NO_SEARCH_PROVIDER`, as before.
+
 **Not yet built:**
-- Live *streaming* of the research step log. `runPipeline` is an `AsyncGenerator` yielding
-  step events, and `RunReviewBar` shows the real post-hoc trace each run returns, but the
-  events are not yet streamed to the browser as they happen — that needs the route handler in
-  Part 3 of the plan referenced in `docs/decision-log.md`.
-- Macro and policy context. The report declares a `macro` block that is permanently
-  `UNAVAILABLE` with `NO_SEARCH_PROVIDER`: there is no web-search key, and a macro figure
-  without a source URL must never be stated. Declared rather than omitted so the gap is
-  visible.
-- The `serve_peer_screen` **contract output** with real data. Peer comparison itself now
-  runs for real inside the research pipeline (`peerMetrics` in `web/lib/agent/metrics.ts`,
-  including the honest "no eligible peer" path with stated exclusion reasons), but it is not
-  yet emitted as the contract's own `serve_peer_screen` record or written by the batch.
+- The batch-written `serve_peer_screen` **contract output**. The Peers tab no longer reads the BBCA-only
+  fixture: it builds the screen from the peers a Run Analyst pass saved in `agent_runs.package`
+  (`web/lib/agent/peerScreen.ts`), for every symbol that has been run, including the honest "no
+  comparable alternative qualified" state with every exclusion and its reason. It is a view over the
+  saved package, not a Supabase table or a Python-batch output.
 - The formal `serve_narrative` contract output itself is still fixture-only; Run
   Analyst's report is a separate, `agent_runs`-backed path that follows the same
   "LLM never sees raw data or does math" rule but isn't yet the contract's own field.
-- `serve_alert` / `serve_alert_evidence` remain fixture-only, so `isFlagged` and the
-  overview's "flagged" count still read the two-symbol fixture even though
-  `serve_components` is now real for all ten. Closing that gap means deriving alerts from
-  the scored components in the batch. Navigation no longer depends on this flag (every row
-  is clickable), but the "N flagged" count on the dashboard still can be misleading until
-  it is derived from real scoring.
+- `serve_alert` / `serve_alert_evidence` remain fixture-only. Nothing in the app reads
+  them for status any more: the overview chip, the "N crossed" count and the Run Analyst
+  verdict are all derived from the scored `serve_components` (`web/lib/flowStatus.ts`).
+  Deriving alerts in the batch is still open, but no longer misleads the UI.
 
 ## Locked decisions
 
