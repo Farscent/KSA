@@ -12,9 +12,9 @@ import { Value } from "@/components/Value";
  * clipping to stop it and would slide underneath the opaque status chip, which
  * silently truncates a figure instead of visibly breaking — hence the margin.
  */
-const COLUMNS = "72px 1fr 44px 132px 132px 152px 88px";
-/** Fixed columns (620px) + six 16px gaps + 28px horizontal padding. */
-const MIN_WIDTH = 744;
+const COLUMNS = "72px 1fr 40px 124px 124px 144px 172px";
+/** Fixed columns (676px) + six 16px gaps + 28px horizontal padding + room for the sector name. */
+const MIN_WIDTH = 880;
 
 export function OverviewTable({ rows }: { rows: HoldingRow[] }) {
   const router = useRouter();
@@ -61,7 +61,7 @@ export function OverviewTable({ rows }: { rows: HoldingRow[] }) {
               borderColor: "var(--color-line-soft)",
               minWidth: MIN_WIDTH,
               cursor: "pointer",
-              background: r.flagged ? "#fbfcfd" : "var(--color-card)",
+              background: r.status.kind === "reviewed" && r.status.crossed.length > 0 ? "#fbfcfd" : "var(--color-card)",
             }}
           >
             <div className="font-mono text-[12.5px] font-medium text-[var(--color-ink)]">{r.sym}</div>
@@ -89,21 +89,19 @@ export function OverviewTable({ rows }: { rows: HoldingRow[] }) {
               )}
             </div>
             <div className="flex justify-end">
-              <StatusChip flagged={r.flagged} />
+              <StatusChip status={r.status} />
             </div>
           </div>
         ))}
       </div>
       <div className="px-4.5 py-3 text-[11.5px] shrink-0" style={{ background: "#faf9f7", color: "var(--color-muted)" }}>
-        Any row opens its evidence report.{" "}
-        <span className="font-mono font-medium" style={{ color: "var(--color-accent)" }}>
-          Review
-        </span>{" "}
-        means broker-flow structure crossed a threshold this run.{" "}
+        Any row opens its evidence report. The status names which broker-flow components crossed their own
+        baseline in the last Run Analyst pass, or{" "}
         <span className="font-mono font-medium" style={{ color: "#3d4650" }}>
-          Stable
+          No threshold crossed
         </span>{" "}
-        means no threshold was crossed {"—"} it is not an endorsement.
+        {"—"} not an endorsement. <span className="font-mono">Not reviewed</span> means no run yet;{" "}
+        <span className="font-mono">Outdated</span> means the data date or your position moved since the last run.
       </div>
     </div>
   );

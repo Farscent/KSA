@@ -23,6 +23,8 @@ import {
   type Financials,
   type Future,
   type Identity,
+  type MacroContext,
+  type MacroItem,
   type NearbyContext,
   type PeerCompany,
   type Peers,
@@ -117,7 +119,21 @@ export function projectFinancials(payload: unknown): ResearchBlock<Financials> {
   const historicalFinancials = arr(financials.historical_financials)
     .map(obj)
     .filter((row): row is Json => row !== null)
-    .map((row) => ({ year: num(row.year) ?? 0, revenue: num(row.revenue), earnings: num(row.earnings) }))
+    .map((row) => ({
+      year: num(row.year) ?? 0,
+      revenue: num(row.revenue),
+      earnings: num(row.earnings),
+      operating_cash_flow: num(row.operating_cash_flow),
+      free_cash_flow: num(row.free_cash_flow),
+      total_debt: num(row.total_debt),
+      net_debt: num(row.net_debt),
+      cash_and_equivalents: num(row.cash_and_equivalents),
+      ebit: num(row.ebit),
+      ebitda: num(row.ebitda),
+      interest_expense: num(row.interest_expense),
+      total_equity: num(row.total_equity),
+      total_assets: num(row.total_assets),
+    }))
     .filter((row) => row.year > 0)
     .sort((a, b) => a.year - b.year);
 
@@ -128,6 +144,15 @@ export function projectFinancials(payload: unknown): ResearchBlock<Financials> {
     .sort((a, b) => String(a.year).localeCompare(String(b.year)));
   const latestRatio = ratios[ratios.length - 1];
   const profitability = obj(latestRatio?.profitability);
+  const capital = obj(latestRatio?.capital);
+  const liquidity = obj(latestRatio?.liquidity);
+  const bankRatios = {
+    capital_adequacy_ratio: num(capital?.capital_adequacy_ratio),
+    loan_to_deposit_ratio: num(liquidity?.loan_to_deposit_ratio),
+    casa_ratio: num(liquidity?.casa_ratio),
+    net_interest_margin: num(profitability?.net_interest_margin),
+  };
+  const hasBankRatios = Object.values(bankRatios).some((v) => v !== null);
 
   return available<Financials>({
     eps: num(financials.eps),
@@ -137,6 +162,7 @@ export function projectFinancials(payload: unknown): ResearchBlock<Financials> {
     roa: num(profitability?.roa),
     net_profit_margin: num(profitability?.net_profit_margin),
     ratio_year: latestRatio ? String(latestRatio.year) : null,
+    bank_ratios: hasBankRatios ? bankRatios : null,
     yoy_quarter_earnings_growth: num(financials.yoy_quarter_earnings_growth),
     yoy_quarter_revenue_growth: num(financials.yoy_quarter_revenue_growth),
   });
@@ -327,4 +353,77 @@ export function projectNearbyContext(
     filings,
     corporate_actions: corporate_actions.filter((row) => row.date).slice(0, 8),
   });
+}
+
+const MACRO_PER_TOPIC = 3;
+/** Tavily's relevance score, 0-1. Below this a hit is off-topic ("Prabowo closes
+ * state enterprises" under inflation scored 0.16). A hit with no score is kept. */
+export const MACRO_MIN_SCORE = 0.3;
+
+/** Hostname without a leading "www.", or null when the URL is not http(s). */
+function publisherOf(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    return parsed.hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * A provider date as YYYY-MM-DD (UTC), or null. Accepts ISO strings and the
+ * RFC 1123 form Tavily actually returns ("Tue, 22 Sep 2026 23:55:10 GMT").
+ */
+function isoDay(value: string | null): string | null {
+  if (!value) return null;
+  const iso = /^\d{4}-\d{2}-\d{2}/.exec(value)?.[0];
+  const time = iso ? new Date(`${iso}T00:00:00Z`).getTime() : new Date(value).getTime();
+  if (Number.isNaN(time)) return null;
+  return new Date(time).toISOString().slice(0, 10);
+}
+
+/**
+ * Macro and policy headlines for one review window.
+ *
+ * Keeps title, publisher, date and URL, and nothing else: the provider's
+ * snippet is dropped here so no sentence of it can reach the report. An item
+ * with no http(s) URL or no date inside the window is discarded — a headline
+ * without a source, or from after the data being reviewed, is not evidence.
+ */
+export function projectMacro(
+  resultsByTopic: { topic: string; payload: unknown }[],
+  window: { start: string; end: string }
+): ResearchBlock<MacroContext> {
+  const seen = new Set<string>();
+  const items: MacroItem[] = [];
+
+  for (const { topic, payload } of resultsByTopic) {
+    const kept = arr(obj(payload)?.results)
+      .map(obj)
+      .filter((row): row is Json => row !== null)
+      .flatMap((row): MacroItem[] => {
+        const url = str(row.url);
+        const title = str(row.title);
+        const published = isoDay(str(row.published_date));
+        const publisher = url ? publisherOf(url) : null;
+        const score = num(row.score);
+        if (score !== null && score < MACRO_MIN_SCORE) return [];
+        if (!url || !title || !published || !publisher) return [];
+        if (published < window.start || published > window.end) return [];
+        return [{ topic, title: title.trim(), publisher, published_date: published, source_url: url }];
+      })
+      .sort((a, b) => b.published_date.localeCompare(a.published_date))
+      .filter((item) => {
+        if (seen.has(item.source_url)) return false;
+        seen.add(item.source_url);
+        return true;
+      })
+      .slice(0, MACRO_PER_TOPIC);
+    items.push(...kept);
+  }
+
+  if (items.length === 0) return unavailable<MacroContext>("NO_MACRO_RESULTS");
+  items.sort((a, b) => b.published_date.localeCompare(a.published_date));
+  return available<MacroContext>({ window_start: window.start, window_end: window.end, items }, window.end);
 }

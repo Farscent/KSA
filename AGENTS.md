@@ -195,3 +195,10 @@ Cite the recipe as external validation of the premise; do not import its scoring
 - Never call a broker cohort "institutions".
 - Never claim a cause. News, filings and corporate actions are nearby context, and exist
   mainly to *suppress* false alarms.
+
+## Web search (macro and policy headlines)
+
+The Next server may call Tavily only through `web/lib/search/tavily.ts`, via `getOrFetch`
+in `web/lib/sectors/cache.ts` (endpoint `tavily/search`, 0 Sectors credits). Keep title,
+publisher, date and URL only; never store or narrate search snippets, and never state a
+macro figure without its source link.

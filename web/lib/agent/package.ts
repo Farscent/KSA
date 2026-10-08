@@ -21,13 +21,15 @@ import type {
   Financials,
   Future,
   Identity,
+  MacroContext,
   NearbyContext,
   Peers,
   ResearchBlock,
   Subsector,
   Valuation,
 } from "@/lib/research/types";
-import type { Measure, PeerMetrics, PositionMetrics, ValuationMetrics } from "@/lib/agent/metrics";
+import type { EvidenceCoverage } from "@/lib/agent/coverage";
+import type { Measure, PeerMetrics, PositionMetrics, QualityMetrics, ValuationMetrics } from "@/lib/agent/metrics";
 
 export type StepStatus = "done" | "failed" | "skipped";
 
@@ -56,6 +58,8 @@ export interface ResearchPackage {
   valuation: ResearchBlock<Valuation>;
   valuation_metrics: ValuationMetrics;
   financials: ResearchBlock<Financials>;
+  /** Computed from `financials`; absent on packages saved before it existed. */
+  quality_metrics?: QualityMetrics;
   future: ResearchBlock<Future>;
   dividend: ResearchBlock<Dividend>;
   peers: ResearchBlock<Peers>;
@@ -63,16 +67,18 @@ export interface ResearchPackage {
   subsector: ResearchBlock<Subsector>;
   context: ResearchBlock<NearbyContext>;
   /**
-   * Macro and policy context. Permanently UNAVAILABLE for now: the app has no
-   * web-search provider, and a macro figure without a source URL is exactly
-   * the kind of number this system must never state. Declared rather than
-   * omitted so the report shows an honest gap instead of a silent one.
+   * Macro and policy headlines for the review window, each with its source
+   * URL. UNAVAILABLE with NO_SEARCH_PROVIDER when no search key is set: a
+   * macro figure without a source URL must never be stated, so the gap is
+   * declared rather than omitted.
    */
-  macro: ResearchBlock<never>;
+  macro: ResearchBlock<MacroContext>;
 
   provenance: ProvenanceEntry[];
   steps: StepTrace[];
   credits_used: number;
+  /** Built in code at the end of the run; absent on packages saved before it existed. */
+  coverage?: EvidenceCoverage;
 }
 
 const COMPONENT_FIELDS: Record<string, readonly string[]> = {
@@ -124,6 +130,7 @@ export function allowedGroundedPaths(pkg: ResearchPackage): Set<string> {
     position: pkg.position as unknown as Record<string, unknown>,
     valuation_metrics: pkg.valuation_metrics as unknown as Record<string, unknown>,
     peer_metrics: pkg.peer_metrics as unknown as Record<string, unknown>,
+    quality_metrics: (pkg.quality_metrics ?? {}) as unknown as Record<string, unknown>,
   };
   for (const [group, fields] of Object.entries(measureGroups)) {
     for (const [name, value] of Object.entries(fields)) {

@@ -31,10 +31,6 @@ interface ResultsContextValue {
   /** Latest saved portfolio-wide summary, or null if Run Analyst has never
    * produced one. */
   portfolioRun: PortfolioRunRow | null;
-  /** Every saved run per held symbol, newest first — backs the "Past runs" picker. */
-  agentRunHistory: Map<string, AgentRunRow[]>;
-  /** Every saved portfolio-wide summary, newest first. */
-  portfolioRunHistory: PortfolioRunRow[];
   /**
    * Real Supabase-scored components where `sectors/scoring.py` has run, else
    * the fixture-backed example for the two symbols that still have one — the
@@ -46,7 +42,6 @@ interface ResultsContextValue {
   positionOf: (symbol: string) => ServePositionRecord | undefined;
   historyOf: (symbol: string) => ServePriceHistoryRecord | undefined;
   agentRunOf: (symbol: string) => AgentRunRow | undefined;
-  agentRunHistoryOf: (symbol: string) => AgentRunRow[];
   componentsOf: (symbol: string) => ServeComponentsRecord | undefined;
   flowSeriesOf: (symbol: string) => ServeFlowSeriesRecord[];
 }
@@ -59,8 +54,6 @@ export function ResultsProvider({
   run,
   agentRuns,
   portfolioRun,
-  agentRunHistory,
-  portfolioRunHistory,
   components,
   flowSeries,
   children,
@@ -70,8 +63,6 @@ export function ResultsProvider({
   run: ServeRunRecord | null;
   agentRuns: Map<string, AgentRunRow>;
   portfolioRun: PortfolioRunRow | null;
-  agentRunHistory: Map<string, AgentRunRow[]>;
-  portfolioRunHistory: PortfolioRunRow[];
   components: Map<string, ServeComponentsRecord>;
   flowSeries: Map<string, ServeFlowSeriesRecord[]>;
   children: React.ReactNode;
@@ -85,18 +76,15 @@ export function ResultsProvider({
       run,
       agentRuns,
       portfolioRun,
-      agentRunHistory,
-      portfolioRunHistory,
       components,
       flowSeries,
       positionOf: (symbol) => byPosition.get(symbol),
       historyOf: (symbol) => byHistory.get(symbol),
       agentRunOf: (symbol) => agentRuns.get(symbol),
-      agentRunHistoryOf: (symbol) => agentRunHistory.get(symbol) ?? [],
       componentsOf: (symbol) => components.get(symbol),
       flowSeriesOf: (symbol) => flowSeries.get(symbol) ?? [],
     };
-  }, [positions, priceHistory, run, agentRuns, portfolioRun, agentRunHistory, portfolioRunHistory, components, flowSeries]);
+  }, [positions, priceHistory, run, agentRuns, portfolioRun, components, flowSeries]);
 
   return <ResultsContext.Provider value={value}>{children}</ResultsContext.Provider>;
 }
@@ -121,14 +109,6 @@ export function useAgentRun(symbol: string): AgentRunRow | undefined {
 
 export function usePortfolioRun(): PortfolioRunRow | null {
   return useResults().portfolioRun;
-}
-
-export function useAgentRunHistory(symbol: string): AgentRunRow[] {
-  return useResults().agentRunHistoryOf(symbol);
-}
-
-export function usePortfolioRunHistory(): PortfolioRunRow[] {
-  return useResults().portfolioRunHistory;
 }
 
 export function useComponents(symbol: string): ServeComponentsRecord | undefined {

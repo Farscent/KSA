@@ -148,3 +148,30 @@ describe("projectNearbyContext", () => {
     expect(block.reason_codes).toContain("NO_NEARBY_CONTEXT");
   });
 });
+
+describe("projectFinancials — cash flow, debt and bank ratios", () => {
+  it("keeps the annual line items the quality metrics need", () => {
+    const block = projectFinancials(ffd);
+    const latest = block.data!.historical_financials.at(-1)!;
+    expect(latest.free_cash_flow).not.toBeNull();
+    expect(latest.total_debt).not.toBeNull();
+    expect(latest.ebitda).not.toBeNull();
+    expect(latest.interest_expense).not.toBeNull();
+  });
+
+  it("reads the bank ratios Sectors publishes", () => {
+    const ratios = projectFinancials(ffd).data!.bank_ratios;
+    expect(ratios?.capital_adequacy_ratio).toBeGreaterThan(0);
+    expect(ratios?.loan_to_deposit_ratio).toBeGreaterThan(0);
+  });
+
+  it("returns null bank ratios when none are published", () => {
+    const stripped = JSON.parse(JSON.stringify(ffd));
+    for (const row of stripped.financials.historical_financial_ratio) {
+      delete row.capital;
+      delete row.liquidity;
+      delete row.profitability.net_interest_margin;
+    }
+    expect(projectFinancials(stripped).data!.bank_ratios).toBeNull();
+  });
+});

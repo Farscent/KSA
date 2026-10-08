@@ -64,6 +64,24 @@ export interface FinancialYear {
   year: number;
   revenue: number | null;
   earnings: number | null;
+  operating_cash_flow: number | null;
+  free_cash_flow: number | null;
+  total_debt: number | null;
+  net_debt: number | null;
+  cash_and_equivalents: number | null;
+  ebit: number | null;
+  ebitda: number | null;
+  interest_expense: number | null;
+  total_equity: number | null;
+  total_assets: number | null;
+}
+
+/** Bank-specific ratios Sectors publishes alongside the generic ones. */
+export interface BankRatios {
+  capital_adequacy_ratio: number | null;
+  loan_to_deposit_ratio: number | null;
+  casa_ratio: number | null;
+  net_interest_margin: number | null;
 }
 
 export interface Financials {
@@ -74,6 +92,8 @@ export interface Financials {
   roa: number | null;
   net_profit_margin: number | null;
   ratio_year: string | null;
+  /** Null when the issuer is not a bank, or Sectors published none. */
+  bank_ratios: BankRatios | null;
   yoy_quarter_earnings_growth: number | null;
   yoy_quarter_revenue_growth: number | null;
 }
@@ -146,6 +166,21 @@ export interface CorporateActionItem {
   kind: "dividend" | "stock_split" | "right_issue" | "agm";
   date: string | null;
   detail: string;
+}
+
+export interface MacroItem {
+  topic: string;
+  title: string;
+  publisher: string;
+  published_date: string;
+  source_url: string;
+}
+
+/** Headlines only, each with its source URL. No figures are extracted. */
+export interface MacroContext {
+  window_start: string;
+  window_end: string;
+  items: MacroItem[];
 }
 
 export interface NearbyContext {

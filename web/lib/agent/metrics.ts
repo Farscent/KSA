@@ -10,7 +10,7 @@
  */
 
 import { SHARES_PER_LOT } from "@/lib/holdings/units";
-import type { ResearchBlock, PeerCompany, Peers, Subsector, Valuation } from "@/lib/research/types";
+import type { Financials, Identity, ResearchBlock, PeerCompany, Peers, Subsector, Valuation } from "@/lib/research/types";
 
 export interface Measure<T = number> {
   value: T | null;
@@ -100,6 +100,8 @@ export function percentileRank(value: number, population: number[]): number | nu
 export interface PeerExclusion {
   symbol: string;
   reason: string;
+  /** Absent on runs saved before the Peers tab read this. */
+  code?: "MISSING_RATIO" | "NON_POSITIVE_PE";
 }
 
 export interface PeerMetrics {
@@ -156,14 +158,14 @@ export function peerMetrics(peers: ResearchBlock<Peers>, subsector: ResearchBloc
     if (peer.pb_mrq === null) missing.push("P/B");
     if (peer.market_cap === null) missing.push("market cap");
     if (missing.length > 0) {
-      excluded.push({ symbol: peer.symbol, reason: `missing ${missing.join(", ")}` });
+      excluded.push({ symbol: peer.symbol, reason: `missing ${missing.join(", ")}`, code: "MISSING_RATIO" });
       continue;
     }
     // A negative P/E means the company lost money; it cannot be compared on an
     // earnings multiple, so exclude it and say why rather than dragging the
     // median somewhere meaningless.
     if (peer.pe_ttm !== null && peer.pe_ttm <= 0) {
-      excluded.push({ symbol: peer.symbol, reason: "non-positive P/E (loss-making)" });
+      excluded.push({ symbol: peer.symbol, reason: "non-positive P/E (loss-making)", code: "NON_POSITIVE_PE" });
       continue;
     }
     eligible.push(peer);
@@ -257,5 +259,119 @@ export function valuationMetrics(valuation: ResearchBlock<Valuation>): Valuation
     latest_pe_peer_avg:
       latest?.pe_peer_avg == null ? notMeasured<number>("NO_PEER_AVG_PE") : measured(latest.pe_peer_avg),
     latest_valuation_year: latest?.year == null ? notMeasured<number>("NO_HISTORICAL_PE") : measured(latest.year),
+  };
+}
+
+// -- Earnings quality and balance sheet --------------------------------------
+
+export interface QualityMetrics {
+  is_bank: boolean;
+  /** The latest financial year the figures below describe. */
+  year: Measure;
+  /** Free cash flow over net income, cumulative across the last three years. */
+  fcf_to_net_income_3y: Measure;
+  fcf_margin: Measure;
+  revenue_growth_yoy: Measure;
+  earnings_growth_yoy: Measure;
+  net_debt: Measure;
+  net_debt_to_ebitda: Measure;
+  interest_coverage: Measure;
+  debt_to_equity: Measure;
+  /** Bank ratios, as published by Sectors. UNAVAILABLE for non-banks. */
+  capital_adequacy_ratio: Measure;
+  loan_to_deposit_ratio: Measure;
+  casa_ratio: Measure;
+  net_interest_margin: Measure;
+}
+
+function growth(current: number | null, prior: number | null): Measure {
+  if (current === null || prior === null) return notMeasured("NO_PRIOR_YEAR");
+  if (prior === 0) return notMeasured("ZERO_PRIOR_YEAR");
+  // Absolute value of the prior year, so a swing from loss to profit reads as
+  // growth rather than flipping sign (Equity-Research-Company's convention).
+  return measured((current - prior) / Math.abs(prior));
+}
+
+/**
+ * Cash-flow, leverage and growth measures from the annual series Sectors
+ * already returned for `sections=financials` — no extra fetch, no extra
+ * credits.
+ *
+ * Banks fund themselves with customer deposits, so free cash flow against
+ * profit, net debt against EBITDA and interest cover are not meaningful for
+ * them. Those measures come back UNAVAILABLE with NOT_APPLICABLE_BANK rather
+ * than as a number that would read as a finding; the bank ratios Sectors
+ * publishes (capital adequacy, loan-to-deposit, CASA, net interest margin)
+ * are reported instead.
+ */
+export function qualityMetrics(financials: ResearchBlock<Financials>, identity: ResearchBlock<Identity>): QualityMetrics {
+  const fin = financials.value_status === "AVAILABLE" ? financials.data : null;
+  const years = (fin?.historical_financials ?? []).filter((y) => y.year > 0);
+  const latest = years[years.length - 1] ?? null;
+  const prior = years[years.length - 2] ?? null;
+  const bank = fin?.bank_ratios ?? null;
+  const isBank = identity.data?.sub_sector === "Banks" || bank?.capital_adequacy_ratio != null;
+
+  if (!fin || !latest) {
+    const none = notMeasured<number>("NO_FINANCIALS_SECTION");
+    return {
+      is_bank: isBank, year: none, fcf_to_net_income_3y: none, fcf_margin: none, revenue_growth_yoy: none,
+      earnings_growth_yoy: none, net_debt: none, net_debt_to_ebitda: none, interest_coverage: none,
+      debt_to_equity: none, capital_adequacy_ratio: none, loan_to_deposit_ratio: none, casa_ratio: none,
+      net_interest_margin: none,
+    };
+  }
+
+  const bankOnly = (v: number | null | undefined): Measure =>
+    !isBank ? notMeasured<number>("NOT_A_BANK") : v == null ? notMeasured<number>("NO_BANK_RATIO") : measured(v);
+  const nonBank = (compute: () => Measure): Measure =>
+    isBank ? notMeasured<number>("NOT_APPLICABLE_BANK") : compute();
+
+  const lastThree = years.slice(-3);
+  const fcfToNetIncome = (): Measure => {
+    if (lastThree.length < 3) return notMeasured("NEEDS_THREE_YEARS");
+    if (lastThree.some((y) => y.free_cash_flow === null || y.earnings === null)) return notMeasured("MISSING_CASH_FLOW");
+    const fcf = lastThree.reduce((sum, y) => sum + (y.free_cash_flow as number), 0);
+    const earnings = lastThree.reduce((sum, y) => sum + (y.earnings as number), 0);
+    return earnings > 0 ? measured(fcf / earnings) : notMeasured("NON_POSITIVE_EARNINGS");
+  };
+
+  return {
+    is_bank: isBank,
+    year: measured(latest.year),
+    fcf_to_net_income_3y: nonBank(fcfToNetIncome),
+    fcf_margin: nonBank(() =>
+      latest.free_cash_flow === null || latest.revenue === null || latest.revenue <= 0
+        ? notMeasured("MISSING_CASH_FLOW")
+        : measured(latest.free_cash_flow / latest.revenue)
+    ),
+    revenue_growth_yoy: prior ? growth(latest.revenue, prior.revenue) : notMeasured("NO_PRIOR_YEAR"),
+    earnings_growth_yoy: prior ? growth(latest.earnings, prior.earnings) : notMeasured("NO_PRIOR_YEAR"),
+    net_debt: nonBank(() => (latest.net_debt === null ? notMeasured("NO_NET_DEBT") : measured(latest.net_debt))),
+    net_debt_to_ebitda: nonBank(() =>
+      latest.net_debt === null || latest.ebitda === null
+        ? notMeasured("NO_NET_DEBT")
+        : latest.ebitda <= 0
+          ? notMeasured("NON_POSITIVE_EBITDA")
+          : measured(latest.net_debt / latest.ebitda)
+    ),
+    interest_coverage: nonBank(() =>
+      latest.ebit === null || latest.interest_expense === null
+        ? notMeasured("NO_INTEREST_EXPENSE")
+        : latest.interest_expense <= 0
+          ? notMeasured("NO_INTEREST_EXPENSE")
+          : measured(latest.ebit / latest.interest_expense)
+    ),
+    debt_to_equity: nonBank(() =>
+      latest.total_debt === null || latest.total_equity === null
+        ? notMeasured("NO_DEBT_OR_EQUITY")
+        : latest.total_equity <= 0
+          ? notMeasured("NON_POSITIVE_EQUITY")
+          : measured(latest.total_debt / latest.total_equity)
+    ),
+    capital_adequacy_ratio: bankOnly(bank?.capital_adequacy_ratio),
+    loan_to_deposit_ratio: bankOnly(bank?.loan_to_deposit_ratio),
+    casa_ratio: bankOnly(bank?.casa_ratio),
+    net_interest_margin: bankOnly(bank?.net_interest_margin),
   };
 }

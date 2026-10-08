@@ -27,7 +27,7 @@ interface ReportViewProps {
  *
  * Each section footer lists the `grounded_in` paths it was written from, so a
  * reader can audit that every figure traces to a computed value rather than
- * taking the prose on trust. A section with no paragraphs renders as an
+ * taking the prose on trust. A section with no table and no prose renders as an
  * explicit "not measurable" with its reason codes — never silently dropped.
  */
 export function ReportView({ sections, steps, sources, creditsUsed, durationMs }: ReportViewProps) {
@@ -37,9 +37,14 @@ export function ReportView({ sections, steps, sources, creditsUsed, durationMs }
   // section is the product, so it headlines even though the expanded report
   // opens with the position for context. Falls back to whatever did get
   // written if flow was not measurable this run.
-  const written = sections.filter((s) => s.paragraphs.length > 0);
+  const written = sections.filter((s) => s.paragraphs.length > 0 || (s.rows?.length ?? 0) > 0);
+  if (written.length === 0) return null;
+
+  // Reports in the table format open with one headline per section. Reports
+  // saved before it have only paragraphs, so they keep the single lead
+  // paragraph they always showed.
+  const keyPoints = sections.filter((s) => s.headline);
   const lead = written.find((s) => s.id === "flow_structure") ?? written[0];
-  if (!lead) return null;
 
   return (
     <div
@@ -55,9 +60,22 @@ export function ReportView({ sections, steps, sources, creditsUsed, durationMs }
         </div>
       </div>
 
-      <p className="mt-3 text-[13.5px] leading-7" style={{ color: "var(--color-ink)" }}>
-        {lead.paragraphs[0]}
-      </p>
+      {keyPoints.length > 0 ? (
+        <div className="mt-3 flex flex-col gap-2.5">
+          <div className="font-mono text-[10.5px] uppercase" style={{ letterSpacing: "0.07em", color: "var(--color-muted)" }}>
+            Key points
+          </div>
+          {keyPoints.map((s) => (
+            <div key={s.id} className="text-[13px] leading-6" style={{ color: "var(--color-ink)" }}>
+              <span className="font-medium">{s.title}.</span> {s.headline}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-3 text-[13.5px] leading-7" style={{ color: "var(--color-ink)" }}>
+          {lead.paragraphs[0]}
+        </p>
+      )}
 
       <button
         onClick={() => setExpanded((v) => !v)}
