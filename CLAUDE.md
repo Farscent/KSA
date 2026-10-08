@@ -98,7 +98,7 @@ price prediction — so it doesn't conflict with "Not the product" above.
 
 ## Current implementation status
 
-Kept in sync with `README.md` — check there for the authoritative checklist. As of now:
+Kept in sync with `docs/status.md` (the milestone checklist) and `README.md`'s "real vs. fixture" table. As of now:
 
 **Done:**
 - Broker registry capture/validate/profile/replay (`sectors/registry.py`)
@@ -272,4 +272,4 @@ python -m sectors ingest-prices --live     # 10 API credits: 1 per demo symbol
 python -m sectors publish                  # upsert results into Supabase
 ```
 
-See `README.md` for full offline replay, caching, and live-fetch instructions.
+See `RUNBOOK.md` for full offline replay, caching, and live-fetch instructions.
