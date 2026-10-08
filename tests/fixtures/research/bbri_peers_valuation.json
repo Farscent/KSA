@@ -1,0 +1,1139 @@
+{
+  "symbol": "BBRI.JK",
+  "company_name": "PT Bank Rakyat Indonesia (Persero) Tbk",
+  "valuation": {
+    "last_close_price": 3310,
+    "latest_close_date": "2026-09-18",
+    "daily_close_change": -0.00600600600600601,
+    "forward_pe": 7.51948018274357,
+    "intrinsic_value": 289,
+    "historical_valuation": [
+      {
+        "pb": 2.44306341748841,
+        "pe": 14.4852351105461,
+        "ps": 4.47589640949611,
+        "pcf": 7.6017266833976,
+        "peg": 0.22384259689421238,
+        "year": 2022,
+        "pb_peer_avg": 0.975919472508022,
+        "pe_peer_avg": 15.1292552726864,
+        "ps_peer_avg": 4.41860675563346,
+        "enterprise_to_ebitda": null,
+        "enterprise_to_revenue": null
+      },
+      {
+        "pb": 2.71428685498643,
+        "pe": 14.2928141949342,
+        "ps": 4.68653353455001,
+        "pcf": -172.785703136346,
+        "peg": 0.8190420343786728,
+        "year": 2023,
+        "pb_peer_avg": 0.854769761923978,
+        "pe_peer_avg": 16.8856446249576,
+        "ps_peer_avg": 4.03165315770388,
+        "enterprise_to_ebitda": null,
+        "enterprise_to_revenue": null
+      },
+      {
+        "pb": 1.93163931471067,
+        "pe": 10.1766813937321,
+        "ps": 3.06601075528339,
+        "pcf": 25.2099986243507,
+        "peg": 111.15461572367536,
+        "year": 2024,
+        "pb_peer_avg": 0.809474232052149,
+        "pe_peer_avg": 16.1927341107751,
+        "ps_peer_avg": 3.43164746605984,
+        "enterprise_to_ebitda": null,
+        "enterprise_to_revenue": null
+      },
+      {
+        "pb": 1.65938389693573,
+        "pe": 9.69348238563835,
+        "ps": 3.02893400318245,
+        "pcf": 37.5698174935088,
+        "peg": -1.6648389381666924,
+        "year": 2025,
+        "pb_peer_avg": 0.852068326449239,
+        "pe_peer_avg": 14.6874841154653,
+        "ps_peer_avg": 3.86931355910018,
+        "enterprise_to_ebitda": null,
+        "enterprise_to_revenue": null
+      },
+      {
+        "pb": 1.54273973546668,
+        "pe": 7.96892790031896,
+        "ps": 2.33743145919592,
+        "pcf": 35.2840433429088,
+        "peg": null,
+        "year": 2026,
+        "pb_peer_avg": 0.784889045698602,
+        "pe_peer_avg": 9.51711248049343,
+        "ps_peer_avg": 2.67708319470913,
+        "enterprise_to_ebitda": null,
+        "enterprise_to_revenue": 0.356929420238948
+      }
+    ]
+  },
+  "peers": [
+    {
+      "peers_data": {
+        "companies": [
+          {
+            "year": 2025,
+            "group": [
+              "self"
+            ],
+            "pb_mrq": 1.55206142571119,
+            "pe_ttm": 8.01707852207315,
+            "symbol": "BBRI.JK",
+            "market_cap": 499644560584710,
+            "net_income": 56652384000000,
+            "company_name": "PT Bank Rakyat Indonesia (Persero) Tbk",
+            "employee_num": 27937,
+            "total_assets": 2135370000000000,
+            "total_equity": 330941434000000,
+            "pretax_income": 72792819000000,
+            "total_revenue": 181304342000000,
+            "point_summaries": [
+              {
+                "name": "value",
+                "point": 7.5,
+                "maxpoint": 18
+              },
+              {
+                "name": "competitive",
+                "point": 13.5,
+                "maxpoint": 25.5
+              },
+              {
+                "name": "future",
+                "point": 18,
+                "maxpoint": 18
+              },
+              {
+                "name": "financials",
+                "point": 3.5,
+                "maxpoint": 7.5
+              },
+              {
+                "name": "dividend",
+                "point": 6,
+                "maxpoint": 9
+              },
+              {
+                "updatedAt": "2026-09-17T23:01:12.042Z"
+              }
+            ],
+            "yearly_mcap_chg": -0.163316582914573,
+            "operating_expense": 88446886000000,
+            "revenue_breakdown": null,
+            "total_liabilities": 1804430000000000,
+            "int_income_breakdown": [
+              {
+                "class": "Loans & Deposits",
+                "amount": 167837861000000,
+                "category": "Loans"
+              },
+              {
+                "class": "Finance Receivable",
+                "amount": 3236963000000,
+                "category": "Finance Receivables"
+              },
+              {
+                "class": "Securities",
+                "amount": 15233115000000,
+                "category": "Securities"
+              },
+              {
+                "class": "Marketable Securities",
+                "amount": 482021000000,
+                "category": "Securities purchased under agreement to resell"
+              },
+              {
+                "class": "Interbank Placement",
+                "amount": 3473298000000,
+                "category": "Placement with Bank Indonesia"
+              },
+              {
+                "class": "Current Accounts",
+                "amount": 4189000000,
+                "category": "Current accounts with Bank Indonesia"
+              },
+              {
+                "class": "Sharia Income",
+                "amount": 10531460000000,
+                "category": "Murabahah"
+              },
+              {
+                "class": "Sharia Income",
+                "amount": 4384048000000,
+                "category": "Mudharabah"
+              },
+              {
+                "class": "Sharia Income",
+                "amount": 8622000000,
+                "category": "Ujrah"
+              },
+              {
+                "class": "Other Income",
+                "amount": 2591791000000,
+                "category": "Others"
+              }
+            ],
+            "operating_expense_breakdown": [
+              {
+                "class": "Salaries & Benefits",
+                "amount": 42113566000000,
+                "category": "Salaries and employees' benefits"
+              },
+              {
+                "class": "General & Admin",
+                "amount": 33776049000000,
+                "category": "General and administrative"
+              },
+              {
+                "class": "Other expenses",
+                "amount": 12557271000000,
+                "category": "Others (expense)"
+              }
+            ]
+          },
+          {
+            "year": 2025,
+            "group": [
+              "sub_sector",
+              "sector",
+              "industry",
+              "sub_industry"
+            ],
+            "pb_mrq": 2.86561027447657,
+            "pe_ttm": 13.3348186656172,
+            "symbol": "BBCA.JK",
+            "market_cap": 774968601825000,
+            "net_income": 57537287000000,
+            "company_name": "PT Bank Central Asia Tbk.",
+            "employee_num": 27937,
+            "total_assets": 1586830000000000,
+            "total_equity": 281687555000000,
+            "pretax_income": 71260876000000,
+            "total_revenue": 112006326000000,
+            "point_summaries": [
+              {
+                "name": "value",
+                "point": 10.5,
+                "maxpoint": 18
+              },
+              {
+                "name": "competitive",
+                "point": 18,
+                "maxpoint": 25.5
+              },
+              {
+                "name": "future",
+                "point": 30,
+                "maxpoint": 30
+              },
+              {
+                "name": "financials",
+                "point": 1.5,
+                "maxpoint": 7.5
+              },
+              {
+                "name": "dividend",
+                "point": 6,
+                "maxpoint": 11
+              },
+              {
+                "updatedAt": "2026-09-17T23:01:12.042Z"
+              }
+            ],
+            "yearly_mcap_chg": -0.20625,
+            "operating_expense": 36734403000000,
+            "revenue_breakdown": null,
+            "total_liabilities": 1305140000000000,
+            "int_income_breakdown": [
+              {
+                "class": "Loans & Deposits",
+                "amount": 67446394000000,
+                "category": "Loans"
+              },
+              {
+                "class": "Marketable Securities",
+                "amount": 24163987000000,
+                "category": "Investment securities"
+              },
+              {
+                "class": "Marketable Securities",
+                "amount": 727466000000,
+                "category": "Securities purchased under agreements to resell"
+              },
+              {
+                "class": "Finance Receivable",
+                "amount": 3625497000000,
+                "category": "Consumer financing receivables and finance lease receivables"
+              },
+              {
+                "class": "Interbank Placement",
+                "amount": 633824000000,
+                "category": "Placements with Bank Indonesia and other banks"
+              },
+              {
+                "class": "Finance Receivable",
+                "amount": 525723000000,
+                "category": "Bill receivable"
+              },
+              {
+                "class": "Sharia Income",
+                "amount": 948274000000,
+                "category": "Sharia Income"
+              },
+              {
+                "class": "Other Income",
+                "amount": 841487000000,
+                "category": "Others"
+              }
+            ],
+            "operating_expense_breakdown": [
+              {
+                "class": "Salaries & Benefits",
+                "amount": 17780770000000,
+                "category": "Personnel expenses"
+              },
+              {
+                "class": "General & Admin",
+                "amount": 16780115000000,
+                "category": "General and administrative"
+              },
+              {
+                "class": "Other expenses",
+                "amount": 2173518000000,
+                "category": "Others (expense)"
+              }
+            ]
+          },
+          {
+            "year": 2025,
+            "group": [
+              "sub_sector",
+              "sector",
+              "industry",
+              "sub_industry"
+            ],
+            "pb_mrq": 1.41233070960279,
+            "pe_ttm": 5.74245324338242,
+            "symbol": "BMRI.JK",
+            "market_cap": 401939999982600,
+            "net_income": 56293950000000,
+            "company_name": "PT Bank Mandiri (Persero) Tbk",
+            "employee_num": 38751,
+            "total_assets": 2829950000000000,
+            "total_equity": 327401998000000,
+            "pretax_income": 76417563000000,
+            "total_revenue": 134313864000000,
+            "point_summaries": [
+              {
+                "name": "value",
+                "point": 7.5,
+                "maxpoint": 18
+              },
+              {
+                "name": "competitive",
+                "point": 15,
+                "maxpoint": 25.5
+              },
+              {
+                "name": "future",
+                "point": 30,
+                "maxpoint": 30
+              },
+              {
+                "name": "financials",
+                "point": 1.5,
+                "maxpoint": 7.5
+              },
+              {
+                "name": "dividend",
+                "point": 6,
+                "maxpoint": 9
+              },
+              {
+                "updatedAt": "2026-09-17T23:01:12.162Z"
+              }
+            ],
+            "yearly_mcap_chg": -0.0543478260869565,
+            "operating_expense": 67584405000000,
+            "revenue_breakdown": null,
+            "total_liabilities": 2502550000000000,
+            "int_income_breakdown": [
+              {
+                "class": "Loans & Deposits",
+                "amount": 109869267000000,
+                "category": "Loans"
+              },
+              {
+                "class": "Securities",
+                "amount": 14146067000000,
+                "category": "Securities"
+              },
+              {
+                "class": "Finance Receivable",
+                "amount": 6624748000000,
+                "category": "Consumer financing income"
+              },
+              {
+                "class": "Interbank Placement",
+                "amount": 3915675000000,
+                "category": "Placement with Bank Indonesia and other banks"
+              },
+              {
+                "class": "Marketable Securities",
+                "amount": 3971333000000,
+                "category": "Marketable securities"
+              },
+              {
+                "class": "Other Income",
+                "amount": 99530000000,
+                "category": "Margin"
+              },
+              {
+                "class": "Sharia Income",
+                "amount": 24763029000000,
+                "category": "Sharia Income"
+              },
+              {
+                "class": "Finance Receivable",
+                "amount": 1022817000000,
+                "category": "Others"
+              }
+            ],
+            "operating_expense_breakdown": [
+              {
+                "class": "Salaries & Benefits",
+                "amount": 26635454000000,
+                "category": "Salaries and employees' benefits"
+              },
+              {
+                "class": "General & Admin",
+                "amount": 30422281000000,
+                "category": "General and administrative"
+              },
+              {
+                "class": "Other expenses",
+                "amount": 10526670000000,
+                "category": "Others (expense)"
+              }
+            ]
+          },
+          {
+            "year": 2025,
+            "group": [
+              "sub_sector",
+              "sector",
+              "industry",
+              "sub_industry"
+            ],
+            "pb_mrq": 0.842756223613237,
+            "pe_ttm": 6.63714622911825,
+            "symbol": "BBNI.JK",
+            "market_cap": 138097030799640,
+            "net_income": 20040703000000,
+            "company_name": "PT Bank Negara Indonesia (Persero) Tbk",
+            "employee_num": 25266,
+            "total_assets": 1362050000000000,
+            "total_equity": 176339368000000,
+            "pretax_income": 24397463000000,
+            "total_revenue": 63939207000000,
+            "point_summaries": [
+              {
+                "name": "value",
+                "point": 12,
+                "maxpoint": 18
+              },
+              {
+                "name": "competitive",
+                "point": 9.5,
+                "maxpoint": 25.5
+              },
+              {
+                "name": "future",
+                "point": 30,
+                "maxpoint": 30
+              },
+              {
+                "name": "financials",
+                "point": 1.5,
+                "maxpoint": 7.5
+              },
+              {
+                "name": "dividend",
+                "point": 1.5,
+                "maxpoint": 11
+              },
+              {
+                "updatedAt": "2026-09-17T23:01:12.302Z"
+              }
+            ],
+            "yearly_mcap_chg": -0.134259259259259,
+            "operating_expense": 30856356000000,
+            "revenue_breakdown": null,
+            "total_liabilities": 1185720000000000,
+            "int_income_breakdown": [
+              {
+                "class": "Loans & Deposits",
+                "amount": 57957360000000,
+                "category": "Loans"
+              },
+              {
+                "class": "Securities",
+                "amount": 7204618000000,
+                "category": "Government Bonds"
+              },
+              {
+                "class": "Marketable Securities",
+                "amount": 752171000000,
+                "category": "Marketable securities"
+              },
+              {
+                "class": "Interbank Placement",
+                "amount": 2413743000000,
+                "category": "Placement with Bank Indonesia"
+              },
+              {
+                "class": "Finance Receivable",
+                "amount": 1066262000000,
+                "category": "Others"
+              }
+            ],
+            "operating_expense_breakdown": [
+              {
+                "class": "Salaries & Benefits",
+                "amount": 14529204000000,
+                "category": "Salaries and employees' benefits"
+              },
+              {
+                "class": "General & Admin",
+                "amount": 9394734000000,
+                "category": "General and administrative"
+              },
+              {
+                "class": "Other expenses",
+                "amount": 1703849000000,
+                "category": "Deposit guarantee premium"
+              },
+              {
+                "class": "Sales & Marketing",
+                "amount": 1187693000000,
+                "category": "Promotion expense"
+              },
+              {
+                "class": "Other expenses",
+                "amount": 4040876000000,
+                "category": "Others (expense)"
+              }
+            ]
+          },
+          {
+            "year": 2025,
+            "group": [
+              "sub_sector",
+              "sector",
+              "industry",
+              "sub_industry"
+            ],
+            "pb_mrq": 1.47184060938747,
+            "pe_ttm": 9.4116287985016,
+            "symbol": "BRIS.JK",
+            "market_cap": 75123658716155,
+            "net_income": 7567523000000,
+            "company_name": "PT Bank Syariah Indonesia Tbk",
+            "employee_num": 23977,
+            "total_assets": 456192606000000,
+            "total_equity": 51952874000000,
+            "pretax_income": 10011705000000,
+            "total_revenue": 26065682000000,
+            "point_summaries": [
+              {
+                "name": "value",
+                "point": 10.5,
+                "maxpoint": 18
+              },
+              {
+                "name": "competitive",
+                "point": 4.5,
+                "maxpoint": 25.5
+              },
+              {
+                "name": "future",
+                "point": 30,
+                "maxpoint": 30
+              },
+              {
+                "name": "financials",
+                "point": 1.5,
+                "maxpoint": 7.5
+              },
+              {
+                "name": "dividend",
+                "point": 1.5,
+                "maxpoint": 9
+              },
+              {
+                "updatedAt": "2026-09-17T23:01:11.840Z"
+              }
+            ],
+            "yearly_mcap_chg": -0.388475836431227,
+            "operating_expense": 13700714000000,
+            "revenue_breakdown": null,
+            "total_liabilities": 404239732000000,
+            "int_income_breakdown": [
+              {
+                "class": "Loans & Deposits",
+                "amount": 14510697000000,
+                "category": "Income from sales and purchases"
+              },
+              {
+                "class": "Loans & Deposits",
+                "amount": 10126213000000,
+                "category": "Income from profit sharing"
+              },
+              {
+                "class": "Loans & Deposits",
+                "amount": 128536000000,
+                "category": "Income from ijarah - net"
+              },
+              {
+                "class": "Other Income",
+                "amount": 3500045000000,
+                "category": "Others"
+              }
+            ],
+            "operating_expense_breakdown": [
+              {
+                "class": "Salaries & Benefits",
+                "amount": 5496617000000,
+                "category": "Salaries and employees' benefits"
+              },
+              {
+                "class": "General & Admin",
+                "amount": 8109463000000,
+                "category": "General and administrative expenses"
+              },
+              {
+                "class": "Other expenses",
+                "amount": 651000000,
+                "category": "Wadiah bonus"
+              },
+              {
+                "class": "Other expenses",
+                "amount": 93983000000,
+                "category": "Others (expense)"
+              }
+            ]
+          },
+          {
+            "year": 2025,
+            "group": [
+              "sub_sector",
+              "sector",
+              "industry",
+              "sub_industry"
+            ],
+            "pb_mrq": 1.6422280116821,
+            "pe_ttm": 20.2514080561981,
+            "symbol": "BNLI.JK",
+            "market_cap": 74146460064750,
+            "net_income": 3587535000000,
+            "company_name": "Bank Permata Tbk",
+            "employee_num": 6440,
+            "total_assets": 268342325000000,
+            "total_equity": 45848014000000,
+            "pretax_income": 4631007000000,
+            "total_revenue": 12556774000000,
+            "point_summaries": [
+              {
+                "name": "value",
+                "point": 6,
+                "maxpoint": 18
+              },
+              {
+                "name": "competitive",
+                "point": 4.5,
+                "maxpoint": 25.5
+              },
+              {
+                "name": "future",
+                "point": 18,
+                "maxpoint": 18
+              },
+              {
+                "name": "financials",
+                "point": 3.5,
+                "maxpoint": 7.5
+              },
+              {
+                "name": "dividend",
+                "point": 3,
+                "maxpoint": 9
+              },
+              {
+                "updatedAt": "2026-09-17T23:01:12.163Z"
+              }
+            ],
+            "yearly_mcap_chg": -0.338658146964856,
+            "operating_expense": 6152863000000,
+            "revenue_breakdown": null,
+            "total_liabilities": 222494311000000,
+            "int_income_breakdown": [
+              {
+                "class": "Loans & Deposits",
+                "amount": 11464021000000,
+                "category": "Loans"
+              },
+              {
+                "class": "Securities",
+                "amount": 4401576000000,
+                "category": "Investment Securities"
+              },
+              {
+                "class": "Interbank Placement",
+                "amount": 636099000000,
+                "category": "Placement with Bank Indonesia"
+              },
+              {
+                "class": "Marketable Securities",
+                "amount": 111985000000,
+                "category": "Securities purchased under resale agreements"
+              },
+              {
+                "class": "Finance Receivable",
+                "amount": 286665000000,
+                "category": "Financial assets held for trading"
+              },
+              {
+                "class": "Finance Receivable",
+                "amount": 66990000000,
+                "category": "Acceptance receivables and trade finance"
+              },
+              {
+                "class": "Current Accounts",
+                "amount": 64896000000,
+                "category": "Current accounts with Bank Indonesia"
+              },
+              {
+                "class": "Other Income",
+                "amount": 2732000000,
+                "category": "Others"
+              }
+            ],
+            "operating_expense_breakdown": [
+              {
+                "class": "Salaries & Benefits",
+                "amount": 3446920000000,
+                "category": "Salaries and employees' benefits"
+              },
+              {
+                "class": "General & Admin",
+                "amount": 1701368000000,
+                "category": "General and administrative expenses"
+              },
+              {
+                "class": "Other expenses",
+                "amount": 1004575000000,
+                "category": "Others (expense)"
+              }
+            ]
+          },
+          {
+            "year": 2025,
+            "group": [
+              "sub_sector",
+              "sector",
+              "industry",
+              "sub_industry"
+            ],
+            "pb_mrq": 2.03198176884183,
+            "pe_ttm": 13.8573214343633,
+            "symbol": "MEGA.JK",
+            "market_cap": 45447940252210,
+            "net_income": 3364735000000,
+            "company_name": "Bank Mega Tbk",
+            "employee_num": 3931,
+            "total_assets": 140828044000000,
+            "total_equity": 25076358000000,
+            "pretax_income": 4160842000000,
+            "total_revenue": 7714452000000,
+            "point_summaries": [
+              {
+                "name": "value",
+                "point": 9,
+                "maxpoint": 18
+              },
+              {
+                "name": "competitive",
+                "point": 13.5,
+                "maxpoint": 25.5
+              },
+              {
+                "name": "future",
+                "point": 18,
+                "maxpoint": 18
+              },
+              {
+                "name": "financials",
+                "point": 5,
+                "maxpoint": 7.5
+              },
+              {
+                "name": "dividend",
+                "point": 7,
+                "maxpoint": 11
+              },
+              {
+                "updatedAt": "2026-09-17T23:01:11.882Z"
+              }
+            ],
+            "yearly_mcap_chg": 0.181268803515534,
+            "operating_expense": 3188639000000,
+            "revenue_breakdown": null,
+            "total_liabilities": 115751686000000,
+            "int_income_breakdown": [
+              {
+                "class": "Loans & Deposits",
+                "amount": 6810068000000,
+                "category": "Loans"
+              },
+              {
+                "class": "Securities",
+                "amount": 3241388000000,
+                "category": "Securities"
+              },
+              {
+                "class": "Interbank Placement",
+                "amount": 145285000000,
+                "category": "Placement with Bank Indonesia"
+              },
+              {
+                "class": "Other Income",
+                "amount": 455000000,
+                "category": "Others"
+              }
+            ],
+            "operating_expense_breakdown": [
+              {
+                "class": "Salaries & Benefits",
+                "amount": 1318299000000,
+                "category": "Salaries and employees' benefits"
+              },
+              {
+                "class": "General & Admin",
+                "amount": 1851824000000,
+                "category": "General and administrative expenses"
+              },
+              {
+                "class": "Sales & Marketing",
+                "amount": 18516000000,
+                "category": "Fees and commissions"
+              }
+            ]
+          },
+          {
+            "year": 2025,
+            "group": [
+              "sub_sector",
+              "sector",
+              "industry",
+              "sub_industry"
+            ],
+            "pb_mrq": 0.76964406837481,
+            "pe_ttm": 6.29699137069966,
+            "symbol": "BNGA.JK",
+            "market_cap": 43185509865240,
+            "net_income": 6876537000000,
+            "company_name": "PT Bank CIMB Niaga Tbk",
+            "employee_num": 11063,
+            "total_assets": 372698893000000,
+            "total_equity": 58157183000000,
+            "pretax_income": 8825765000000,
+            "total_revenue": 17203529000000,
+            "point_summaries": [
+              {
+                "name": "value",
+                "point": 12.5,
+                "maxpoint": 18
+              },
+              {
+                "name": "competitive",
+                "point": 6.5,
+                "maxpoint": 25.5
+              },
+              {
+                "name": "future",
+                "point": 18,
+                "maxpoint": 18
+              },
+              {
+                "name": "financials",
+                "point": 3.5,
+                "maxpoint": 7.5
+              },
+              {
+                "name": "dividend",
+                "point": 9,
+                "maxpoint": 9
+              },
+              {
+                "updatedAt": "2026-09-17T23:01:12.044Z"
+              }
+            ],
+            "yearly_mcap_chg": 0.0205882352941176,
+            "operating_expense": 8968146000000,
+            "revenue_breakdown": null,
+            "total_liabilities": 314541710000000,
+            "int_income_breakdown": [
+              {
+                "class": "Loans & Deposits",
+                "amount": 16671322000000,
+                "category": "Loans"
+              },
+              {
+                "class": "Finance Receivable",
+                "amount": 1739996000000,
+                "category": "Consumer financing"
+              },
+              {
+                "class": "Securities",
+                "amount": 5867311000000,
+                "category": "Securities"
+              },
+              {
+                "class": "Interbank Placement",
+                "amount": 126313000000,
+                "category": "Current account with Bank Indonesia and other banks"
+              },
+              {
+                "class": "Interbank Placement",
+                "amount": 267018000000,
+                "category": "Placement with Bank Indonesia and other banks"
+              }
+            ],
+            "operating_expense_breakdown": [
+              {
+                "class": "Salaries & Benefits",
+                "amount": 5293129000000,
+                "category": "Personnel expenses"
+              },
+              {
+                "class": "General & Admin",
+                "amount": 3668085000000,
+                "category": "General and administrative expenses"
+              },
+              {
+                "class": "Other expenses",
+                "amount": 6932000000,
+                "category": "Others (expense)"
+              }
+            ]
+          },
+          {
+            "year": 2025,
+            "group": [
+              "sub_sector",
+              "sector",
+              "industry",
+              "sub_industry"
+            ],
+            "pb_mrq": 0.790888162761664,
+            "pe_ttm": 7.61385101457865,
+            "symbol": "BDMN.JK",
+            "market_cap": 42960628994040,
+            "net_income": 3970711000000,
+            "company_name": "PT Bank Danamon Indonesia Tbk",
+            "employee_num": 23334,
+            "total_assets": 275714367000000,
+            "total_equity": 58012069000000,
+            "pretax_income": 5386653000000,
+            "total_revenue": 22645007000000,
+            "point_summaries": [
+              {
+                "name": "value",
+                "point": 11,
+                "maxpoint": 18
+              },
+              {
+                "name": "competitive",
+                "point": 7.5,
+                "maxpoint": 25.5
+              },
+              {
+                "name": "future",
+                "point": 18,
+                "maxpoint": 18
+              },
+              {
+                "name": "financials",
+                "point": 3,
+                "maxpoint": 7.5
+              },
+              {
+                "name": "dividend",
+                "point": 3.5,
+                "maxpoint": 9
+              },
+              {
+                "updatedAt": "2026-09-17T23:01:12.043Z"
+              }
+            ],
+            "yearly_mcap_chg": 0.783132530120482,
+            "operating_expense": 13173207000000,
+            "revenue_breakdown": null,
+            "total_liabilities": 217702298000000,
+            "int_income_breakdown": [
+              {
+                "class": "Loans & Deposits",
+                "amount": 13381490000000,
+                "category": "Loans"
+              },
+              {
+                "class": "Finance Receivable",
+                "amount": 10083074000000,
+                "category": "Consumer financing receivables"
+              },
+              {
+                "class": "Other Income",
+                "amount": 1202409000000,
+                "category": "Government bonds"
+              },
+              {
+                "class": "Loans & Deposits",
+                "amount": 996922000000,
+                "category": "Marketable securities and other bills receivable"
+              },
+              {
+                "class": "Interbank Placement",
+                "amount": 276878000000,
+                "category": "Placement with other bank and BI"
+              }
+            ],
+            "operating_expense_breakdown": [
+              {
+                "class": "Salaries & Benefits",
+                "amount": 7293041000000,
+                "category": "Salaries and employees' benefits"
+              },
+              {
+                "class": "General & Admin",
+                "amount": 5243684000000,
+                "category": "General and administrative"
+              },
+              {
+                "class": "Sales & Marketing",
+                "amount": 636482000000,
+                "category": "Others (expense)"
+              }
+            ]
+          },
+          {
+            "year": 2025,
+            "group": [
+              "sub_sector",
+              "sector",
+              "industry",
+              "sub_industry"
+            ],
+            "pb_mrq": 0.647589285063101,
+            "pe_ttm": 5.50359153302706,
+            "symbol": "NISP.JK",
+            "market_cap": 28735456680480,
+            "net_income": 5057473000000,
+            "company_name": "PT Bank OCBC NISP Tbk",
+            "employee_num": 6263,
+            "total_assets": 308142182000000,
+            "total_equity": 43858597000000,
+            "pretax_income": 6408239000000,
+            "total_revenue": 12979939000000,
+            "point_summaries": [
+              {
+                "name": "value",
+                "point": 12.5,
+                "maxpoint": 18
+              },
+              {
+                "name": "competitive",
+                "point": 3,
+                "maxpoint": 25.5
+              },
+              {
+                "name": "future",
+                "point": 18,
+                "maxpoint": 18
+              },
+              {
+                "name": "financials",
+                "point": 3.5,
+                "maxpoint": 7.5
+              },
+              {
+                "name": "dividend",
+                "point": 5.5,
+                "maxpoint": 11
+              },
+              {
+                "updatedAt": "2026-09-17T23:01:12.236Z"
+              }
+            ],
+            "yearly_mcap_chg": -0.0732600732600733,
+            "operating_expense": 6160992000000,
+            "revenue_breakdown": null,
+            "total_liabilities": 264283585000000,
+            "int_income_breakdown": [
+              {
+                "class": "Loans & Deposits",
+                "amount": 12290880000000,
+                "category": "Loans"
+              },
+              {
+                "class": "Marketable Securities",
+                "amount": 6280769000000,
+                "category": "Marketable securities and government bonds"
+              },
+              {
+                "class": "Current Accounts",
+                "amount": 336305000000,
+                "category": "Current accounts and placements with other banks and Bank Indonesia"
+              },
+              {
+                "class": "Other Income",
+                "amount": 27320000000,
+                "category": "Others"
+              }
+            ],
+            "operating_expense_breakdown": [
+              {
+                "class": "Salaries & Benefits",
+                "amount": 3493794000000,
+                "category": "Salaries and employees' benefits"
+              },
+              {
+                "class": "General & Admin",
+                "amount": 2270635000000,
+                "category": "General and administrative"
+              },
+              {
+                "class": "Other expenses",
+                "amount": 396563000000,
+                "category": "Others (expense)"
+              }
+            ]
+          }
+        ],
+        "group_name": {
+          "sector": "Financials",
+          "industry": "Banks",
+          "sub_sector": "Banks",
+          "sub_industry": "Banks"
+        }
+      }
+    }
+  ]
+}

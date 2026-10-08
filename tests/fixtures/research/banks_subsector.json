@@ -1,0 +1,97 @@
+{
+  "sector": "Financials",
+  "sub_sector": "Banks",
+  "statistics": {
+    "total_companies": 48,
+    "filtered_median_pe": 9.51711248049343,
+    "filtered_weighted_avg_pe": 13.2565945348685,
+    "min_company_pe": -75.013173037595,
+    "max_company_pe": 686.968294937662
+  },
+  "valuation": {
+    "historical_valuation": {
+      "2022": {
+        "pb": 0.975919472508022,
+        "pe": 15.1292552726864,
+        "ps": 4.41860675563346,
+        "pcf": -1.55939100112639
+      },
+      "2023": {
+        "pb": 0.854769761923978,
+        "pe": 16.8856446249576,
+        "ps": 4.03165315770388,
+        "pcf": -0.958154247877684
+      },
+      "2024": {
+        "pb": 0.809474232052149,
+        "pe": 16.1927341107751,
+        "ps": 3.43164746605984,
+        "pcf": 2.33091890859551
+      },
+      "2025": {
+        "pb": 0.852068326449239,
+        "pe": 14.6874841154653,
+        "ps": 3.86931355910018,
+        "pcf": 2.76312177274512
+      },
+      "2026": {
+        "pb": 0.784889045698602,
+        "pe": 9.51711248049343,
+        "ps": 2.67708319470913,
+        "pcf": 2.61017401218269,
+        "pb_rank": 2,
+        "pe_rank": 19,
+        "ps_rank": 25,
+        "pcf_rank": 7
+      }
+    }
+  },
+  "growth": {
+    "weighted_avg_growth_data": {
+      "2018": {
+        "avg_annual_earning_growth": null,
+        "avg_annual_revenue_growth": null
+      },
+      "2019": {
+        "avg_annual_earning_growth": 0.0755179291215021,
+        "avg_annual_revenue_growth": 0.0861924694292809
+      },
+      "2020": {
+        "avg_annual_earning_growth": -0.109963786216215,
+        "avg_annual_revenue_growth": 0.44231889770284
+      },
+      "2021": {
+        "avg_annual_earning_growth": -4.65200823407562,
+        "avg_annual_revenue_growth": 0.210109497508364
+      },
+      "2022": {
+        "avg_annual_earning_growth": 0.404907330562307,
+        "avg_annual_revenue_growth": 0.389486077419324
+      },
+      "2023": {
+        "avg_annual_earning_growth": 0.225041918827651,
+        "avg_annual_revenue_growth": 0.129416346292589
+      },
+      "2024": {
+        "avg_annual_earning_growth": 0.0690297145372498,
+        "avg_annual_revenue_growth": 0.362680782190039
+      },
+      "2025": {
+        "avg_annual_earning_growth": -0.185555481211844,
+        "avg_annual_revenue_growth": 0.0170272223292264
+      }
+    },
+    "growth_forecasts": {
+      "2026": {
+        "base_year": 2025,
+        "eps_growth": 0.166426885841909,
+        "revenue_growth": 0.199493314362015
+      },
+      "2027": {
+        "base_year": 2025,
+        "eps_growth": 0.254742771552985,
+        "revenue_growth": 0.288186434907391
+      }
+    }
+  }
+}
