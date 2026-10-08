@@ -16,9 +16,9 @@ export function answerFor(question: string, totals: Totals, flaggedSymbols: stri
 
   if (q.includes("flag")) {
     if (flaggedSymbols.length === 0) {
-      return "No holdings are flagged this run. A flag means broker-flow structure moved outside that symbol's own baseline window — it is not a buy or sell signal.";
+      return "No holding crossed a component threshold in the last run (or none has been reviewed yet). A crossing means broker-flow structure moved outside that symbol's own baseline window — it is not a buy or sell signal.";
     }
-    return `${flaggedSymbols.length === 1 ? "One holding is" : `${flaggedSymbols.length} holdings are`} flagged this run: ${flaggedSymbols.join(", ")}. A flag means broker-flow structure moved outside that symbol's own ${run.window.sessions}-session baseline window — it is not a buy or sell signal.`;
+    return `${flaggedSymbols.length === 1 ? "One holding" : `${flaggedSymbols.length} holdings`} crossed a component threshold in the last run: ${flaggedSymbols.join(", ")}. A crossing means broker-flow structure moved outside that symbol's own ${run.window.sessions}-session baseline window — it is not a buy or sell signal.`;
   }
   if (q.includes("cover")) {
     return `Coverage measures the share of traded value the engine could match to a broker cohort (institutional, retail, or mixed). The remaining share falls in the unknown cohort and is shown as unavailable, never zero. This run has ${run.cohorts_unavailable} cohort record(s) unavailable.`;

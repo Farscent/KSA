@@ -27,6 +27,8 @@ interface PortfolioReportViewProps {
   creditsUsed?: number | null;
   durationMs?: number | null;
   holdings?: HoldingLine[];
+  /** Path prefix a holding line links under (`${hrefBase}/${symbol}`); defaults to the current stock pages. A string, not a function, because History's server page passes it to this client component. */
+  hrefBase?: string;
 }
 
 const VERDICT_COLOR: Record<string, string> = {
@@ -50,12 +52,14 @@ export function PortfolioReportView({
   creditsUsed,
   durationMs,
   holdings,
+  hrefBase = "",
 }: PortfolioReportViewProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const written = sections.filter((s) => s.paragraphs.length > 0);
+  const written = sections.filter((s) => s.paragraphs.length > 0 || (s.rows?.length ?? 0) > 0);
+  if (written.length === 0) return null;
+  const keyPoints = sections.filter((s) => s.headline);
   const lead = written.find((s) => s.id === "overview") ?? written[0];
-  if (!lead) return null;
 
   return (
     <div
@@ -71,16 +75,29 @@ export function PortfolioReportView({
         </div>
       </div>
 
-      <p className="mt-3 text-[13.5px] leading-7" style={{ color: "var(--color-ink)" }}>
-        {lead.paragraphs[0]}
-      </p>
+      {keyPoints.length > 0 ? (
+        <div className="mt-3 flex flex-col gap-2.5">
+          <div className="font-mono text-[10.5px] uppercase" style={{ letterSpacing: "0.07em", color: "var(--color-muted)" }}>
+            Key points
+          </div>
+          {keyPoints.map((s) => (
+            <div key={s.id} className="text-[13px] leading-6" style={{ color: "var(--color-ink)" }}>
+              <span className="font-medium">{s.title}.</span> {s.headline}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-3 text-[13.5px] leading-7" style={{ color: "var(--color-ink)" }}>
+          {lead.paragraphs[0]}
+        </p>
+      )}
 
       {holdings && holdings.length > 0 && (
         <div className="mt-3.5 flex flex-col gap-1.5 border-t pt-3" style={{ borderColor: "var(--color-line-soft)" }}>
           {holdings.map((h) => (
             <Link
               key={h.symbol}
-              href={`/${h.symbol}`}
+              href={`${hrefBase}/${h.symbol}`}
               className="flex items-center justify-between gap-3 rounded-md px-1.5 py-1 text-[11.5px] hover:bg-[var(--color-surface)]"
             >
               <span className="flex items-center gap-2">
