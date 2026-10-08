@@ -1,0 +1,270 @@
+{
+  "contract_version": "1.1.0-draft.1",
+  "contract_status": "UNDER_REVIEW",
+  "output": "serve_peer_screen",
+  "data_kind": "SYNTHETIC_EXAMPLE",
+  "description": "Hand-written peer-screen example for BBCA against a large-cap-bank peer set. Exclusions are shown for candidates that failed the screen with an explicit reason; the BBNI data-coverage cell is deliberately unavailable, not zero.",
+  "records": [
+    {
+      "symbol": "BBCA",
+      "peer_set_label": "Financials · large-cap banks",
+      "screened": 12,
+      "excluded": [
+        {
+          "symbol": "BRIS",
+          "name": "Bank Syariah Indonesia",
+          "reason_code": "INSUFFICIENT_LIQUIDITY",
+          "reason_text": "Insufficient liquidity — median daily traded value below the peer-set floor.",
+          "detail": "Rp 8.4 bn vs Rp 25 bn floor"
+        },
+        {
+          "symbol": "BNGA",
+          "name": "Bank CIMB Niaga",
+          "reason_code": "COVERAGE_BELOW_FLOOR",
+          "reason_text": "No qualifying data — broker cohort labels missing for more than 20% of sessions.",
+          "detail": "Coverage 68% · floor 80%"
+        },
+        {
+          "symbol": "MEGA",
+          "name": "Bank Mega",
+          "reason_code": "INSUFFICIENT_FREE_FLOAT",
+          "reason_text": "Insufficient free float for a comparable flow reading.",
+          "detail": "Free float 4.7%"
+        },
+        {
+          "symbol": "BANK",
+          "name": "Bank Aladin Syariah",
+          "reason_code": "INSUFFICIENT_HISTORY",
+          "reason_text": "Fewer than four complete quarters in the comparison window.",
+          "detail": "2 of 4 quarters"
+        }
+      ],
+      "shortlist": [
+        "BMRI",
+        "BBRI",
+        "BBNI"
+      ],
+      "scorecard": [
+        {
+          "label": "Institutional net flow",
+          "note": "Quarterly, IDR",
+          "unit": "IDR",
+          "cells": [
+            {
+              "symbol": "BBCA",
+              "value": -40000000,
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            },
+            {
+              "symbol": "BMRI",
+              "value": 12500000,
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            },
+            {
+              "symbol": "BBRI",
+              "value": -6200000,
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            },
+            {
+              "symbol": "BBNI",
+              "value": 3900000,
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            }
+          ]
+        },
+        {
+          "label": "Retail net flow",
+          "note": "Quarterly, IDR",
+          "unit": "IDR",
+          "cells": [
+            {
+              "symbol": "BBCA",
+              "value": 20000000,
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            },
+            {
+              "symbol": "BMRI",
+              "value": -4100000,
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            },
+            {
+              "symbol": "BBRI",
+              "value": 9800000,
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            },
+            {
+              "symbol": "BBNI",
+              "value": 1400000,
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            }
+          ]
+        },
+        {
+          "label": "Concentration",
+          "note": "Top 3 brokers, sell side · example",
+          "unit": "SHARE",
+          "cells": [
+            {
+              "symbol": "BBCA",
+              "value": 0.61,
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            },
+            {
+              "symbol": "BMRI",
+              "value": 0.34,
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            },
+            {
+              "symbol": "BBRI",
+              "value": 0.41,
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            },
+            {
+              "symbol": "BBNI",
+              "value": 0.29,
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            }
+          ]
+        },
+        {
+          "label": "Breadth",
+          "note": "Brokers changing side · example",
+          "unit": "RATIO_LABEL",
+          "cells": [
+            {
+              "symbol": "BBCA",
+              "value": "9 / 41",
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            },
+            {
+              "symbol": "BMRI",
+              "value": "4 / 38",
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            },
+            {
+              "symbol": "BBRI",
+              "value": "6 / 44",
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            },
+            {
+              "symbol": "BBNI",
+              "value": "3 / 31",
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            }
+          ]
+        },
+        {
+          "label": "Persistence",
+          "note": "Same-direction sessions · example",
+          "unit": "RATIO_LABEL",
+          "cells": [
+            {
+              "symbol": "BBCA",
+              "value": "6 / 10",
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            },
+            {
+              "symbol": "BMRI",
+              "value": "2 / 10",
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            },
+            {
+              "symbol": "BBRI",
+              "value": "4 / 10",
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            },
+            {
+              "symbol": "BBNI",
+              "value": "2 / 10",
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            }
+          ]
+        },
+        {
+          "label": "Data coverage",
+          "note": "Matched traded value",
+          "unit": "PERCENT",
+          "cells": [
+            {
+              "symbol": "BBCA",
+              "value": 0.92,
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            },
+            {
+              "symbol": "BMRI",
+              "value": 0.97,
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            },
+            {
+              "symbol": "BBRI",
+              "value": 0.95,
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            },
+            {
+              "symbol": "BBNI",
+              "value": null,
+              "value_status": "UNAVAILABLE",
+              "reason_codes": [
+                "COVERAGE_NOT_COMPUTED"
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Quarters available",
+          "note": "Of 4 requested",
+          "unit": "COUNT",
+          "cells": [
+            {
+              "symbol": "BBCA",
+              "value": 4,
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            },
+            {
+              "symbol": "BMRI",
+              "value": 4,
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            },
+            {
+              "symbol": "BBRI",
+              "value": 4,
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            },
+            {
+              "symbol": "BBNI",
+              "value": 4,
+              "value_status": "AVAILABLE",
+              "reason_codes": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

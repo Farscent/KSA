@@ -1,0 +1,111 @@
+{
+  "contract_version": "1.1.0-draft.1",
+  "contract_status": "UNDER_REVIEW",
+  "output": "serve_position",
+  "data_kind": "SYNTHETIC_EXAMPLE",
+  "description": "Hand-written per-symbol reference data for the frozen ten-symbol demo universe. MDKA's close is deliberately unavailable to exercise the unavailable-value path; an unavailable close must never render as zero or be treated as no position.",
+  "records": [
+    {
+      "symbol": "BBCA",
+      "name": "Bank Central Asia",
+      "sector": "Financials",
+      "close": 9175,
+      "close_date": "2026-09-09",
+      "currency": "IDR",
+      "value_status": "AVAILABLE",
+      "reason_codes": []
+    },
+    {
+      "symbol": "BBRI",
+      "name": "Bank Rakyat Indonesia",
+      "sector": "Financials",
+      "close": 4415,
+      "close_date": "2026-09-09",
+      "currency": "IDR",
+      "value_status": "AVAILABLE",
+      "reason_codes": []
+    },
+    {
+      "symbol": "BMRI",
+      "name": "Bank Mandiri",
+      "sector": "Financials",
+      "close": 6250,
+      "close_date": "2026-09-09",
+      "currency": "IDR",
+      "value_status": "AVAILABLE",
+      "reason_codes": []
+    },
+    {
+      "symbol": "BBNI",
+      "name": "Bank Negara Indonesia",
+      "sector": "Financials",
+      "close": 5300,
+      "close_date": "2026-09-09",
+      "currency": "IDR",
+      "value_status": "AVAILABLE",
+      "reason_codes": []
+    },
+    {
+      "symbol": "TLKM",
+      "name": "Telkom Indonesia",
+      "sector": "Communication services",
+      "close": 3020,
+      "close_date": "2026-09-09",
+      "currency": "IDR",
+      "value_status": "AVAILABLE",
+      "reason_codes": []
+    },
+    {
+      "symbol": "ASII",
+      "name": "Astra International",
+      "sector": "Industrials",
+      "close": 5150,
+      "close_date": "2026-09-09",
+      "currency": "IDR",
+      "value_status": "AVAILABLE",
+      "reason_codes": []
+    },
+    {
+      "symbol": "ICBP",
+      "name": "Indofood CBP",
+      "sector": "Consumer staples",
+      "close": 11025,
+      "close_date": "2026-09-09",
+      "currency": "IDR",
+      "value_status": "AVAILABLE",
+      "reason_codes": []
+    },
+    {
+      "symbol": "INDF",
+      "name": "Indofood Sukses Makmur",
+      "sector": "Consumer staples",
+      "close": 6425,
+      "close_date": "2026-09-09",
+      "currency": "IDR",
+      "value_status": "AVAILABLE",
+      "reason_codes": []
+    },
+    {
+      "symbol": "ANTM",
+      "name": "Aneka Tambang",
+      "sector": "Materials",
+      "close": 1850,
+      "close_date": "2026-09-09",
+      "currency": "IDR",
+      "value_status": "AVAILABLE",
+      "reason_codes": []
+    },
+    {
+      "symbol": "MDKA",
+      "name": "Merdeka Copper Gold",
+      "sector": "Materials",
+      "close": null,
+      "close_date": null,
+      "currency": "IDR",
+      "value_status": "UNAVAILABLE",
+      "reason_codes": [
+        "PRICE_NOT_YET_INGESTED"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+[
+  {
+    "code": "ZA",
+    "name": "Synthetic Institutional Broker",
+    "is_foreign": false,
+    "cohort": "unexpected-synthetic-cohort",
+    "license_type": "Synthetic license A"
+  }
+]

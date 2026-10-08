@@ -1,0 +1,37 @@
+[
+  {
+    "code": "ZA",
+    "name": "Synthetic Institutional Broker",
+    "is_foreign": false,
+    "cohort": "retail",
+    "license_type": "Synthetic license A"
+  },
+  {
+    "code": "ZB",
+    "name": "Synthetic Retail Broker",
+    "is_foreign": true,
+    "cohort": "retail",
+    "license_type": "Synthetic license B"
+  },
+  {
+    "code": "ZC",
+    "name": "Synthetic Mixed Broker",
+    "is_foreign": false,
+    "cohort": "mixed",
+    "license_type": "Synthetic license C"
+  },
+  {
+    "code": "ZD",
+    "name": "Synthetic Unknown Broker",
+    "is_foreign": true,
+    "cohort": "unknown",
+    "license_type": "Synthetic license D"
+  },
+  {
+    "code": "ZE",
+    "name": "Synthetic Unclassified Broker",
+    "is_foreign": false,
+    "cohort": null,
+    "license_type": null
+  }
+]

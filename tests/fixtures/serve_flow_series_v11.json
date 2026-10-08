@@ -1,0 +1,563 @@
+{
+  "contract_version": "1.1.0-draft.1",
+  "contract_status": "UNDER_REVIEW",
+  "output": "serve_flow_series",
+  "data_kind": "SYNTHETIC_EXAMPLE",
+  "description": "Hand-written cumulative net-value series for BBCA and ANTM across the frozen 20-session window, one record per cohort. The unknown cohort is unavailable with an empty points array, never a flat-zero line.",
+  "records": [
+    {
+      "symbol": "BBCA",
+      "cohort": "institutional",
+      "points": [
+        {
+          "trade_date": "2026-08-21",
+          "cumulative_net_value": -4111615
+        },
+        {
+          "trade_date": "2026-08-22",
+          "cumulative_net_value": -9286287
+        },
+        {
+          "trade_date": "2026-08-23",
+          "cumulative_net_value": -12117821
+        },
+        {
+          "trade_date": "2026-08-24",
+          "cumulative_net_value": -16878043
+        },
+        {
+          "trade_date": "2026-08-25",
+          "cumulative_net_value": -22345922
+        },
+        {
+          "trade_date": "2026-08-26",
+          "cumulative_net_value": -25133194
+        },
+        {
+          "trade_date": "2026-08-27",
+          "cumulative_net_value": -23789554
+        },
+        {
+          "trade_date": "2026-08-28",
+          "cumulative_net_value": -23385935
+        },
+        {
+          "trade_date": "2026-08-29",
+          "cumulative_net_value": -23264634
+        },
+        {
+          "trade_date": "2026-08-30",
+          "cumulative_net_value": -27489209
+        },
+        {
+          "trade_date": "2026-08-31",
+          "cumulative_net_value": -29195769
+        },
+        {
+          "trade_date": "2026-09-01",
+          "cumulative_net_value": -32982307
+        },
+        {
+          "trade_date": "2026-09-02",
+          "cumulative_net_value": -37600991
+        },
+        {
+          "trade_date": "2026-09-03",
+          "cumulative_net_value": -42751525
+        },
+        {
+          "trade_date": "2026-09-04",
+          "cumulative_net_value": -47036321
+        },
+        {
+          "trade_date": "2026-09-05",
+          "cumulative_net_value": -45616516
+        },
+        {
+          "trade_date": "2026-09-06",
+          "cumulative_net_value": -44985156
+        },
+        {
+          "trade_date": "2026-09-07",
+          "cumulative_net_value": -44531937
+        },
+        {
+          "trade_date": "2026-09-08",
+          "cumulative_net_value": -44128354
+        },
+        {
+          "trade_date": "2026-09-09",
+          "cumulative_net_value": -48580870
+        }
+      ],
+      "currency": "IDR",
+      "value_status": "AVAILABLE",
+      "reason_codes": []
+    },
+    {
+      "symbol": "BBCA",
+      "cohort": "retail",
+      "points": [
+        {
+          "trade_date": "2026-08-21",
+          "cumulative_net_value": -1428550
+        },
+        {
+          "trade_date": "2026-08-22",
+          "cumulative_net_value": -3536824
+        },
+        {
+          "trade_date": "2026-08-23",
+          "cumulative_net_value": -6515714
+        },
+        {
+          "trade_date": "2026-08-24",
+          "cumulative_net_value": -4490625
+        },
+        {
+          "trade_date": "2026-08-25",
+          "cumulative_net_value": -5616772
+        },
+        {
+          "trade_date": "2026-08-26",
+          "cumulative_net_value": -6955175
+        },
+        {
+          "trade_date": "2026-08-27",
+          "cumulative_net_value": -5580969
+        },
+        {
+          "trade_date": "2026-08-28",
+          "cumulative_net_value": -4982535
+        },
+        {
+          "trade_date": "2026-08-29",
+          "cumulative_net_value": -2911775
+        },
+        {
+          "trade_date": "2026-08-30",
+          "cumulative_net_value": -4478406
+        },
+        {
+          "trade_date": "2026-08-31",
+          "cumulative_net_value": -6615874
+        },
+        {
+          "trade_date": "2026-09-01",
+          "cumulative_net_value": -7666093
+        },
+        {
+          "trade_date": "2026-09-02",
+          "cumulative_net_value": -10442174
+        },
+        {
+          "trade_date": "2026-09-03",
+          "cumulative_net_value": -11538339
+        },
+        {
+          "trade_date": "2026-09-04",
+          "cumulative_net_value": -12498928
+        },
+        {
+          "trade_date": "2026-09-05",
+          "cumulative_net_value": -13825770
+        },
+        {
+          "trade_date": "2026-09-06",
+          "cumulative_net_value": -14033472
+        },
+        {
+          "trade_date": "2026-09-07",
+          "cumulative_net_value": -10496306
+        },
+        {
+          "trade_date": "2026-09-08",
+          "cumulative_net_value": -9361354
+        },
+        {
+          "trade_date": "2026-09-09",
+          "cumulative_net_value": -7828348
+        }
+      ],
+      "currency": "IDR",
+      "value_status": "AVAILABLE",
+      "reason_codes": []
+    },
+    {
+      "symbol": "BBCA",
+      "cohort": "mixed",
+      "points": [
+        {
+          "trade_date": "2026-08-21",
+          "cumulative_net_value": -2848987
+        },
+        {
+          "trade_date": "2026-08-22",
+          "cumulative_net_value": -2219186
+        },
+        {
+          "trade_date": "2026-08-23",
+          "cumulative_net_value": -1971589
+        },
+        {
+          "trade_date": "2026-08-24",
+          "cumulative_net_value": 817010
+        },
+        {
+          "trade_date": "2026-08-25",
+          "cumulative_net_value": 2656490
+        },
+        {
+          "trade_date": "2026-08-26",
+          "cumulative_net_value": -782566
+        },
+        {
+          "trade_date": "2026-08-27",
+          "cumulative_net_value": 2530492
+        },
+        {
+          "trade_date": "2026-08-28",
+          "cumulative_net_value": 253165
+        },
+        {
+          "trade_date": "2026-08-29",
+          "cumulative_net_value": -1078633
+        },
+        {
+          "trade_date": "2026-08-30",
+          "cumulative_net_value": -2853308
+        },
+        {
+          "trade_date": "2026-08-31",
+          "cumulative_net_value": -1577324
+        },
+        {
+          "trade_date": "2026-09-01",
+          "cumulative_net_value": -2039675
+        },
+        {
+          "trade_date": "2026-09-02",
+          "cumulative_net_value": -3710260
+        },
+        {
+          "trade_date": "2026-09-03",
+          "cumulative_net_value": -7262278
+        },
+        {
+          "trade_date": "2026-09-04",
+          "cumulative_net_value": -6142921
+        },
+        {
+          "trade_date": "2026-09-05",
+          "cumulative_net_value": -7741359
+        },
+        {
+          "trade_date": "2026-09-06",
+          "cumulative_net_value": -6095454
+        },
+        {
+          "trade_date": "2026-09-07",
+          "cumulative_net_value": -9254277
+        },
+        {
+          "trade_date": "2026-09-08",
+          "cumulative_net_value": -12394462
+        },
+        {
+          "trade_date": "2026-09-09",
+          "cumulative_net_value": -12373910
+        }
+      ],
+      "currency": "IDR",
+      "value_status": "AVAILABLE",
+      "reason_codes": []
+    },
+    {
+      "symbol": "BBCA",
+      "cohort": "unknown",
+      "points": [],
+      "currency": "IDR",
+      "value_status": "UNAVAILABLE",
+      "reason_codes": [
+        "EVIDENCE_UNAVAILABLE"
+      ]
+    },
+    {
+      "symbol": "ANTM",
+      "cohort": "institutional",
+      "points": [
+        {
+          "trade_date": "2026-08-21",
+          "cumulative_net_value": -132500
+        },
+        {
+          "trade_date": "2026-08-22",
+          "cumulative_net_value": 338427
+        },
+        {
+          "trade_date": "2026-08-23",
+          "cumulative_net_value": 2755317
+        },
+        {
+          "trade_date": "2026-08-24",
+          "cumulative_net_value": 3983456
+        },
+        {
+          "trade_date": "2026-08-25",
+          "cumulative_net_value": 1705410
+        },
+        {
+          "trade_date": "2026-08-26",
+          "cumulative_net_value": 1578641
+        },
+        {
+          "trade_date": "2026-08-27",
+          "cumulative_net_value": 25899
+        },
+        {
+          "trade_date": "2026-08-28",
+          "cumulative_net_value": 518772
+        },
+        {
+          "trade_date": "2026-08-29",
+          "cumulative_net_value": -2751985
+        },
+        {
+          "trade_date": "2026-08-30",
+          "cumulative_net_value": -1815511
+        },
+        {
+          "trade_date": "2026-08-31",
+          "cumulative_net_value": -5140775
+        },
+        {
+          "trade_date": "2026-09-01",
+          "cumulative_net_value": -2961356
+        },
+        {
+          "trade_date": "2026-09-02",
+          "cumulative_net_value": -1497946
+        },
+        {
+          "trade_date": "2026-09-03",
+          "cumulative_net_value": -1512892
+        },
+        {
+          "trade_date": "2026-09-04",
+          "cumulative_net_value": -4811730
+        },
+        {
+          "trade_date": "2026-09-05",
+          "cumulative_net_value": -6779411
+        },
+        {
+          "trade_date": "2026-09-06",
+          "cumulative_net_value": -10800674
+        },
+        {
+          "trade_date": "2026-09-07",
+          "cumulative_net_value": -9385525
+        },
+        {
+          "trade_date": "2026-09-08",
+          "cumulative_net_value": -7967501
+        },
+        {
+          "trade_date": "2026-09-09",
+          "cumulative_net_value": -5568797
+        }
+      ],
+      "currency": "IDR",
+      "value_status": "AVAILABLE",
+      "reason_codes": []
+    },
+    {
+      "symbol": "ANTM",
+      "cohort": "retail",
+      "points": [
+        {
+          "trade_date": "2026-08-21",
+          "cumulative_net_value": 503956
+        },
+        {
+          "trade_date": "2026-08-22",
+          "cumulative_net_value": 2236198
+        },
+        {
+          "trade_date": "2026-08-23",
+          "cumulative_net_value": 4691661
+        },
+        {
+          "trade_date": "2026-08-24",
+          "cumulative_net_value": 2498727
+        },
+        {
+          "trade_date": "2026-08-25",
+          "cumulative_net_value": -599241
+        },
+        {
+          "trade_date": "2026-08-26",
+          "cumulative_net_value": 1240142
+        },
+        {
+          "trade_date": "2026-08-27",
+          "cumulative_net_value": 4133598
+        },
+        {
+          "trade_date": "2026-08-28",
+          "cumulative_net_value": 6518429
+        },
+        {
+          "trade_date": "2026-08-29",
+          "cumulative_net_value": 7890629
+        },
+        {
+          "trade_date": "2026-08-30",
+          "cumulative_net_value": 8922444
+        },
+        {
+          "trade_date": "2026-08-31",
+          "cumulative_net_value": 10543103
+        },
+        {
+          "trade_date": "2026-09-01",
+          "cumulative_net_value": 12656069
+        },
+        {
+          "trade_date": "2026-09-02",
+          "cumulative_net_value": 9841438
+        },
+        {
+          "trade_date": "2026-09-03",
+          "cumulative_net_value": 9888926
+        },
+        {
+          "trade_date": "2026-09-04",
+          "cumulative_net_value": 13897456
+        },
+        {
+          "trade_date": "2026-09-05",
+          "cumulative_net_value": 12079216
+        },
+        {
+          "trade_date": "2026-09-06",
+          "cumulative_net_value": 14402600
+        },
+        {
+          "trade_date": "2026-09-07",
+          "cumulative_net_value": 17521152
+        },
+        {
+          "trade_date": "2026-09-08",
+          "cumulative_net_value": 14814240
+        },
+        {
+          "trade_date": "2026-09-09",
+          "cumulative_net_value": 15621331
+        }
+      ],
+      "currency": "IDR",
+      "value_status": "AVAILABLE",
+      "reason_codes": []
+    },
+    {
+      "symbol": "ANTM",
+      "cohort": "mixed",
+      "points": [
+        {
+          "trade_date": "2026-08-21",
+          "cumulative_net_value": -2453238
+        },
+        {
+          "trade_date": "2026-08-22",
+          "cumulative_net_value": -5164791
+        },
+        {
+          "trade_date": "2026-08-23",
+          "cumulative_net_value": -4675011
+        },
+        {
+          "trade_date": "2026-08-24",
+          "cumulative_net_value": -1316352
+        },
+        {
+          "trade_date": "2026-08-25",
+          "cumulative_net_value": -4089175
+        },
+        {
+          "trade_date": "2026-08-26",
+          "cumulative_net_value": -4795088
+        },
+        {
+          "trade_date": "2026-08-27",
+          "cumulative_net_value": -4408827
+        },
+        {
+          "trade_date": "2026-08-28",
+          "cumulative_net_value": -2386883
+        },
+        {
+          "trade_date": "2026-08-29",
+          "cumulative_net_value": -1588130
+        },
+        {
+          "trade_date": "2026-08-30",
+          "cumulative_net_value": -5432579
+        },
+        {
+          "trade_date": "2026-08-31",
+          "cumulative_net_value": -8420239
+        },
+        {
+          "trade_date": "2026-09-01",
+          "cumulative_net_value": -12142289
+        },
+        {
+          "trade_date": "2026-09-02",
+          "cumulative_net_value": -12253021
+        },
+        {
+          "trade_date": "2026-09-03",
+          "cumulative_net_value": -15916419
+        },
+        {
+          "trade_date": "2026-09-04",
+          "cumulative_net_value": -14503218
+        },
+        {
+          "trade_date": "2026-09-05",
+          "cumulative_net_value": -17503621
+        },
+        {
+          "trade_date": "2026-09-06",
+          "cumulative_net_value": -18894646
+        },
+        {
+          "trade_date": "2026-09-07",
+          "cumulative_net_value": -18128763
+        },
+        {
+          "trade_date": "2026-09-08",
+          "cumulative_net_value": -15220128
+        },
+        {
+          "trade_date": "2026-09-09",
+          "cumulative_net_value": -15907045
+        }
+      ],
+      "currency": "IDR",
+      "value_status": "AVAILABLE",
+      "reason_codes": []
+    },
+    {
+      "symbol": "ANTM",
+      "cohort": "unknown",
+      "points": [],
+      "currency": "IDR",
+      "value_status": "UNAVAILABLE",
+      "reason_codes": [
+        "EVIDENCE_UNAVAILABLE"
+      ]
+    }
+  ]
+}

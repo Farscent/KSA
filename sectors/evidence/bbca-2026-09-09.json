@@ -1,0 +1,32 @@
+{
+  "evidence_version": "bbca-one-day-v1",
+  "requested_symbol": "BBCA",
+  "requested_trade_date": "2026-09-09",
+  "calendar": {
+    "publisher": "Indonesia Stock Exchange (IDX/BEI)",
+    "document": "Peng-00171/BEI.POP/09-2025, attachment dated 2025-09-23",
+    "url": "https://suprasekuritas.co.id/storage/2026/01/Peng-00171-Libur-Bursa-2026-2.pdf",
+    "hosting_note": "IDX-issued document hosted by a securities broker; visually inspected, including September row and footnotes.",
+    "retrieved_at": "2026-09-11T10:34:11.921983Z",
+    "sha256": "eddc5084de59d4b8476c2345ca1f32ee7e5cc56f9c20688ecf60d57f0bedc7ef",
+    "reviewed_month": "2026-09",
+    "scheduled_trading_days_in_month": 22,
+    "closed_weekdays_in_month": [],
+    "closed_weekdays": [5, 6],
+    "claim": "The September row specifies no holidays other than Saturday and Sunday.",
+    "extraordinary_closures_verified": false,
+    "limitation": "Footnote 2 allows later exceptional closures. The annual calendar alone does not establish that no such closure or symbol suspension occurred."
+  },
+  "api": {
+    "publisher": "Sectors",
+    "url": "https://docs.sectors.app/api-references/v2/indonesia/brokers/broker-summary-by-symbol",
+    "retrieved_at": "2026-09-11T10:34:11.367965Z",
+    "sha256": "5e46caecc38707b5aaa05e82aaa50a1fc1c2ce9798d9ac348dc1ae3f14c2c7c6",
+    "endpoint_population": "Every broker active on the day, grouped by date; optional broker_code filter is not used in this experiment.",
+    "market_scope": null,
+    "pagination_or_truncation_guarantee": null,
+    "frequency_definition": null,
+    "average_rounding_rule": null,
+    "absence_interpretation": "Under the documented active-broker contract, inactive brokers need not appear. The response cannot establish zero activity for each absent broker or distinguish inactivity from an upstream omission."
+  }
+}
