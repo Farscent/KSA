@@ -24,3 +24,9 @@ records claims actual scored output or historically classified BBCA cohort value
 The selected symbol/date is real project scope, but scoring is pending and monetary
 examples are invented. Null score/severity must remain null; unavailable evidence
 must not be replaced by zero. These files do not seed database serving tables.
+
+`research/` holds captured Sectors and Tavily responses (BBRI company report, peers,
+subsector, news, filings, corporate actions, macro headlines) used by the web research
+pipeline's tests. Unlike the files above they are real provider responses, not synthetic.
+`web/scripts/sync-fixtures.mjs` copies them to `web/fixtures/research/`; this directory is
+the source of truth, so new captures go here, never straight into `web/fixtures/`.

@@ -18,14 +18,29 @@ if (!existsSync(sourceDir)) {
   process.exit(1);
 }
 
-mkdirSync(destDir, { recursive: true });
+// Top-level contract fixtures, plus the captured provider responses under
+// research/. The synthetic-* snapshot directories are Python-only and stay put.
+const SYNCED_SUBDIRS = ["research"];
 
-const entries = readdirSync(sourceDir, { withFileTypes: true });
-let copied = 0;
-for (const entry of entries) {
-  if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
-  copyFileSync(join(sourceDir, entry.name), join(destDir, entry.name));
-  copied += 1;
+function syncJson(fromDir, toDir) {
+  mkdirSync(toDir, { recursive: true });
+  let count = 0;
+  for (const entry of readdirSync(fromDir, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
+    copyFileSync(join(fromDir, entry.name), join(toDir, entry.name));
+    count += 1;
+  }
+  return count;
+}
+
+let copied = syncJson(sourceDir, destDir);
+for (const sub of SYNCED_SUBDIRS) {
+  const from = join(sourceDir, sub);
+  if (!existsSync(from)) {
+    console.error(`sync-fixtures: source directory not found: ${from}`);
+    process.exit(1);
+  }
+  copied += syncJson(from, join(destDir, sub));
 }
 
 console.log(`sync-fixtures: copied ${copied} fixture file(s) to web/fixtures/`);

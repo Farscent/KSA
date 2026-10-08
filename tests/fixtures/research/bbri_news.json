@@ -1,0 +1,199 @@
+{
+  "results": [
+    {
+      "title": "IHSG down 0.27% as foreign investors sell shares, with PT Aneka Tambang Tbk (ANTM) and PT Chandra Asri Pacific Tbk (TPIA) among the most traded stocks",
+      "body": "The Jakarta Composite Index (IHSG) fell 0.27% to 6,423.51 points in the first session on Monday 21 September, as foreign investors recorded a net sell of Rp216.24 billion. Total transaction value on the exchange was Rp5.74 trillion with a volume of 14.28 billion shares, while 329 stocks rose, 291 fell and 168 were unchanged; six of eleven sector indices weakened, led by infrastructure down 0.40% and transport and logistics up 1.47%. PT Aneka Tambang Tbk (ANTM) and PT Chandra Asri Pacific Tbk (TPIA) posted the highest transaction values at Rp233.97 billion and Rp225.99 billion respectively, with ANTM\u2019s price slipping 1.50% and TPIA\u2019s climbing 3.27%. PT Bank Rakyat Indonesia (Persero) Tbk (BBRI) and PT Bank Central Asia Tbk (BBCA) were among the top net foreign sell stocks, with outflows of Rp19.05 billion and Rp50.77 billion respectively.",
+      "source": "https://www.idnfinancials.com/id/news/69168/ihsg-turun-0-27-tertekan-aksi-jual-asing-di-saham-saham-ini",
+      "thumbnail": null,
+      "timestamp": "2026-09-21T12:45:00",
+      "sector": "basic-materials",
+      "sub_sector": [
+        "basic-materials",
+        "banks"
+      ],
+      "tags": [
+        "Foreign Investment",
+        "Market Sentiment",
+        "Neutral"
+      ],
+      "symbols": [
+        "ANTM.JK",
+        "TPIA.JK",
+        "BBRI.JK",
+        "BBCA.JK"
+      ],
+      "dimension": {
+        "future": 0,
+        "dividend": 0,
+        "ownership": 0,
+        "technical": 2,
+        "valuation": 2,
+        "financials": 0,
+        "management": 0,
+        "sustainability": 0
+      }
+    },
+    {
+      "title": "PT Adhi Karya Tbk (ADHI) signs Master Restructuring Agreement for Rp 3 trillion debt",
+      "body": "PT Adhi Karya Tbk (ADHI) signed a Master Restructuring Agreement (MRA) on 18 September 2026 to restructure its total debt of approximately Rp 3 trillion. The agreement is with the creditor banks PT Bank Mandiri Tbk (BMRI), PT Bank Rakyat Indonesia Tbk (BBRI) and PT Bank Negara Indonesia Tbk (BBNI), with BMRI also serving as the facility agent. Under the MRA, Tranche A provides a term loan of Rp 1,546,885,366,367 with a 15\u2011year balloon payment and a 3.5 % annual interest (1 % cash quarterly and 2.5 % deferred to 2041); Tranche B supplies a term loan of Rp 1,455,728,987,624 with a 5\u2011year bullet payment, a 1 % annual interest paid quarterly and funded by ADHI\u2019s divestments; Tranche C covers interest\u2011free profit\u2011sharing accrued from the stand\u2011still period and will be repaid in equal installments over 18 months from the effective date. The restructuring aims to preserve ADHI\u2019s business continuity, improve its operational and financial performance, and enable full repayment of its obligations to the creditor banks.",
+      "source": "https://investasi.kontan.co.id/news/adhi-karya-adhi-teken-mra-rp-3-triliun-ini-rinciannya",
+      "thumbnail": "https://foto.kontan.co.id/ezKI-lbdy3U_8qQFnFy2yWSSXRE=/smart/2023/01/26/1223196991t.jpg",
+      "timestamp": "2026-09-21T11:20:00",
+      "sector": "infrastructures",
+      "sub_sector": [
+        "heavy-constructions-civil-engineering",
+        "banks"
+      ],
+      "tags": [
+        "Capital & Funding",
+        "Credit",
+        "Risk & Compliance",
+        "Bearish"
+      ],
+      "symbols": [
+        "ADHI.JK",
+        "BMRI.JK",
+        "BBRI.JK",
+        "BBNI.JK"
+      ],
+      "dimension": {
+        "future": 1,
+        "dividend": 0,
+        "ownership": 0,
+        "technical": 0,
+        "valuation": 0,
+        "financials": 2,
+        "management": 0,
+        "sustainability": 0
+      }
+    },
+    {
+      "title": "PT Adhi Karya (Persero) Tbk (ADHI) signs Master Restructuring Agreement to restructure Rp3 trillion of debt",
+      "body": "PT Adhi Karya (Persero) Tbk (ADHI) signed a Master Restructuring Agreement (MRA) on 18 September 2026 to restructure its Rp3 trillion debt. The agreement, reached with creditor banks PT Bank Mandiri (Persero) (BMRI) Tbk, PT Bank Rakyat Indonesia (Persero) (BBRI) Tbk and PT Bank Negara Indonesia (Persero) (BBNI) Tbk, splits the debt into three tranches: Tranche A of Rp1.55 trillion with 3.5% annual interest (1% cash quarterly, 2.5% deferred to 2041), Tranche B of Rp1.46 trillion with 1% annual interest payable quarterly over five years, and Tranche C covering interest or profit\u2011sharing payable in interest\u2011free installments over 18 months. The MRA becomes effective after shareholder approval at the upcoming RUPS and fulfillment of the agreement\u2019s conditions, as noted by President Director Moeharmein Zein Chaniago. ADHI will refocus on its core engineering and construction business, streamline its organization and portfolio, and aim to improve operational efficiency and financial management.",
+      "source": "https://www.idnfinancials.com/id/news/69134/adhi-restrukturisasi-utang-rp3-triliun-lewat-kesepakatan-mra",
+      "thumbnail": "https://photo2.idnfinancials.com/fly/idn/test/arif/ADHI-21092026.jpg",
+      "timestamp": "2026-09-21T07:40:00",
+      "sector": "infrastructures",
+      "sub_sector": [
+        "heavy-constructions-civil-engineering",
+        "banks"
+      ],
+      "tags": [
+        "Capital & Funding",
+        "Credit",
+        "Shareholders General Meeting",
+        "Risk & Compliance",
+        "Bearish"
+      ],
+      "symbols": [
+        "ADHI.JK",
+        "BMRI.JK",
+        "BBRI.JK",
+        "BBNI.JK"
+      ],
+      "dimension": {
+        "future": 0,
+        "dividend": 0,
+        "ownership": 0,
+        "technical": 0,
+        "valuation": 0,
+        "financials": 2,
+        "management": 0,
+        "sustainability": 0
+      }
+    },
+    {
+      "title": "Foreign outflow hits Rp1.79 trillion, with BBCA and BMRI leading net sells",
+      "body": "On 18 September 2024, foreign investors recorded a net outflow of Rp1.78 trillion on the Indonesia Stock Exchange, with foreign buying rising to Rp7.04 trillion and selling to Rp8.81 trillion. The largest net\u2011sell positions were posted by PT Bank Central Asia Tbk (BBCA) with Rp222.05 billion (35.43 million shares) and PT Bank Mandiri (Persero) Tbk (BMRI) with Rp108.93 billion (25.45 million shares), followed by PT Telkom Indonesia (Persero) Tbk (TLKM), PT Amman Mineral Internasional Tbk (AMMN) and PT Bank Rakyat Indonesia (Persero) Tbk (BBRI). The top net\u2011buy positions were held by PT Aneka Tambang (Persero) Tbk (ANTM) at Rp41.09 billion (12.49 million shares), PT Astra International Tbk (ASII) at Rp22.40 billion (4.55 million shares), PT Adaro Andalan Indonesia Tbk (AADI) at Rp15.59 billion (1.27 million shares), PT Merdeka Copper Gold Tbk (MDKA) at Rp12.47 billion (4.28 million shares) and PT Merdeka Battery Materials Tbk (MBMA) at Rp10.48 billion (19.88 million shares). These figures show the breadth of foreign trading activity across major banks, telecom, mining and battery\u2011materials stocks.",
+      "source": "https://www.idnfinancials.com/id/news/69078/outflow-asing-capai-rp1-79-triliun-bbca-dan-bmri-top-net-sell",
+      "thumbnail": "https://photos.idnfinancials.com/_idn/_DESIGN%20GRAFIS/NET%20FOREIGN%20IMAGE%20%28ARIF%29/NET%20FOREIGN%2019.jpeg",
+      "timestamp": "2026-09-18T20:20:00",
+      "sector": "financials",
+      "sub_sector": [
+        "banks",
+        "telecommunication",
+        "basic-materials",
+        "multi-sector-holdings",
+        "oil-gas-coal"
+      ],
+      "tags": [
+        "Foreign Investment",
+        "Market Sentiment",
+        "Capital & Funding",
+        "Bearish"
+      ],
+      "symbols": [
+        "BBCA.JK",
+        "BMRI.JK",
+        "TLKM.JK",
+        "AMMN.JK",
+        "BBRI.JK",
+        "ANTM.JK",
+        "ASII.JK",
+        "AADI.JK",
+        "MDKA.JK",
+        "MBMA.JK"
+      ],
+      "dimension": {
+        "future": 0,
+        "dividend": 0,
+        "ownership": 2,
+        "technical": 0,
+        "valuation": 0,
+        "financials": 0,
+        "management": 0,
+        "sustainability": 0
+      }
+    },
+    {
+      "title": "IDNFinancials weekly roundup highlights Djarum Group's planned control of Narasi media, the INRU export case, and Danantara's disputed Rp120 trillion state deposit",
+      "body": "The weekly most-read articles on IDNFinancials.com for September 7-13, 2026 center on three major domestic stories: Djarum Group's move to control Narasi media founded by Najwa Shihab, the INRU export case implicating Djarum as a suspect, and controversy over Danantara's Rp120 trillion deposit to the state treasury ordered by President Prabowo Subianto. Other top corporate stories include Bank Mandiri (BMRI) issuing US$750 million dollar bonds at a 7.35% coupon, Bumi Resources (BUMI) acquiring 100% of Loyal Metals, and Morgan Stanley increasing its stake in GoTo Gojek Tokopedia (GOTO) while shares trade at Rp50. President Prabowo's mandate for universal bank account ownership assigns roles to Bank Rakyat Indonesia (BRI) and Bank Syariah Indonesia (BSI), while the Whoosh high-speed rail project undergoes an 80-year debt restructuring.",
+      "source": "https://www.idnfinancials.com/id/news/68795/top-sepekan-djarum-caplok-narasi-kasus-inru-setoran-danantara",
+      "thumbnail": "https://photo2.idnfinancials.com/fly/idn/test/arif/DANANTARA-03072026.jpg",
+      "timestamp": "2026-09-14T08:30:00",
+      "sector": "basic-materials",
+      "sub_sector": [
+        "basic-materials",
+        "banks",
+        "oil-gas-coal",
+        "software-it-services"
+      ],
+      "tags": [
+        "Business Expansion",
+        "Export",
+        "Government Policy",
+        "Bonds",
+        "Mergers & Acquisitions",
+        "Bearish"
+      ],
+      "symbols": [
+        "INRU.JK",
+        "BMRI.JK",
+        "BUMI.JK",
+        "GOTO.JK",
+        "BBRI.JK",
+        "BRIS.JK"
+      ],
+      "dimension": {
+        "future": 0,
+        "dividend": 0,
+        "ownership": 2,
+        "technical": 0,
+        "valuation": 0,
+        "financials": 2,
+        "management": 0,
+        "sustainability": 0
+      }
+    }
+  ],
+  "pagination": {
+    "total_count": 560,
+    "showing": 5,
+    "limit": 5,
+    "offset": 0,
+    "has_next": true,
+    "has_previous": false,
+    "next_offset": 5,
+    "previous_offset": null
+  }
+}
