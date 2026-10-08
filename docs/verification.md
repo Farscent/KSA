@@ -33,7 +33,7 @@ replay and import/cache behavior and profile-only operation without DB creation.
 
 Fixture body files are excluded from Git line-ending translation so snapshot
 checksums remain valid across platforms. Generated caches, SQLite files, and
-Python bytecode are ignored. Run commands are in [README.md](../README.md).
+Python bytecode are ignored. Run commands are in [RUNBOOK.md](../RUNBOOK.md).
 
 Limits: the initial offline checks above do not establish real API access or
 registry values; the subsequent live result is recorded below. Account quota,

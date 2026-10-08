@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# KSA Sectors: web app
 
-## Getting Started
+The Next.js app for the portfolio review engine. It reads finished results from Supabase and
+runs the per-company research and narration pass ("Run Analyst") on the server. For what the
+project is, see the [root README](../README.md).
 
-First, run the development server:
+## Run
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+pnpm dev      # http://localhost:3000
+pnpm test     # vitest
+pnpm lint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`pnpm dev` and `pnpm build` first run `sync:fixtures`, which copies the contract fixtures from
+`../tests/fixtures` into `fixtures/`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Environment goes in `web/.env.local`. The variable table is in the
+[root README](../README.md#setup). `SUPABASE_SERVICE_ROLE_KEY` never belongs here.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Routes
 
-## Learn More
+| Route | What it shows |
+| --- | --- |
+| `/` | Portfolio overview, run status per holding, portfolio-wide summary |
+| `/holdings` | Enter and edit holdings |
+| `/[symbol]` | One-screen summary: finding, three flow components, price chart, key stats |
+| `/[symbol]/details` | Full report sections, evidence coverage, past runs |
+| `/[symbol]/peers` | Peer screen with every exclusion and its reason |
+| `/history`, `/history/[runId]`, `/history/[runId]/[symbol]` | Read-only past runs |
+| `POST /api/analyst` | Run Analyst, streamed as Server-Sent Events |
 
-To learn more about Next.js, take a look at the following resources:
+## Layout
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Path | Role |
+| --- | --- |
+| `lib/sectors/` | Server-side Sectors client, cache-first and credit-metered |
+| `lib/research/`, `lib/agent/` | Projections, deterministic metrics, fact tables, pipeline |
+| `lib/llm/` | Narration over finished rows, with grounding checks |
+| `lib/data/` | Supabase reads for results and saved runs |
+| `lib/flowStatus.ts`, `lib/verdict.ts` | Status chip and triage label from scored components |
+| `components/` | UI |
+| `tests/` | Vitest suites. `live.test.ts` is skipped unless `SECTORS_LIVE=1` |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This app runs on a Next.js version with breaking changes. Read [`AGENTS.md`](AGENTS.md)
+before writing code here.
