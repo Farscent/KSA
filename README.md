@@ -18,7 +18,7 @@ Sectors Hackathon 2026, **Track 03: Market Intelligence**.
 
 | | |
 | --- | --- |
-| **App** | _add before submission_ |
+| **App** | <https://ksa-syuramoons-projects.vercel.app/> |
 | **Demo video** | _add before submission_ |
 | **Demo universe** | BBCA, BBRI, BMRI, BBNI, TLKM, ASII, ICBP, INDF, ANTM, MDKA, frozen at 2026-09-09 ([`docs/demo-scope.md`](docs/demo-scope.md)) |
 
