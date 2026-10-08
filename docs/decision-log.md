@@ -366,7 +366,8 @@ per-section `grounded_in` footers.
 
 Deliberately not built:
 
-- **Live streaming of the step log.** The pipeline already yields step events and
+- **Live streaming of the step log.** *(Since built — see "Live research step log
+  landed" below.)* The pipeline already yields step events and
   the UI shows the real post-hoc trace with true durations and credit costs, but
   events are not streamed as they happen. The generator shape exists so the route
   handler is a thin addition rather than a rewrite.
@@ -461,3 +462,231 @@ Verified: `tsc --noEmit`, `eslint`, `next build` clean; 148 Python tests still
 green; 32 vitest tests (8 new, over hand-built package fixtures) including one
 that asserts no function in `portfolioMetrics.ts` combines two components into
 a single score.
+
+## Readable analyst report: fact tables, grounding check, quality sections
+
+### Why
+
+The first Run Analyst reports were hard to read. Reading the saved BMRI report
+showed why: the model was handed raw JSON numbers and asked to write prose, so
+it copied them out unformatted ("price-to-earnings ratio was 5.41242719491217",
+"revenue of 174020000000000"), got a percent wrong by 100x ("unrealised P/L of
+-45,000 (-0.006787330316742082%)"), wrote one dense paragraph per section with
+no takeaway, and repeated the flow numbers again in "What to watch".
+
+Comparing against the reference stock-research repos (see
+`docs/third-party-notices.md`) showed a shared pattern: code formats every
+number, facts go in a table and prose only says what they mean, the conclusion
+leads, and status columns use a fixed vocabulary rather than raw deltas.
+
+### What changed
+
+Each report section is now **headline + fact table + at most three bullets**.
+
+- The table is built in code (`web/lib/agent/display.ts`): every value is
+  formatted, every comparison against a baseline or peer median is computed,
+  every status comes from a fixed vocabulary with a stated tolerance (one
+  percentage point for shares, 5% for multiples). The model never formats,
+  converts or subtracts anything.
+- The model sees only those finished rows and writes the headline and bullets
+  (`web/lib/llm/reading.ts`). Its text is then checked in code
+  (`web/lib/llm/grounding.ts`): a number that does not appear verbatim in the
+  rows it was shown, or a phrase the compliance rules forbid, rejects the text.
+  One retry names the problem; after that the section keeps its table and shows
+  "written summary not available". An unverified sentence is never shown.
+- `grounded_in` is now derived from the rows, not cited by the model.
+- "What to watch" is built entirely in code from the other sections' rows, so
+  it cannot repeat them in prose.
+- The collapsed card leads with a **Key points** list (one headline per
+  section) instead of one paragraph.
+- Two sections added at zero extra credits, from annual fields Sectors already
+  returned for `sections=financials` that `projectFinancials` used to drop:
+  **Earnings quality** (free cash flow against net income over three years,
+  FCF margin, full-year growth) and **Balance sheet and capital** (net debt,
+  net debt against EBITDA, interest cover, debt against equity).
+- **Banks are handled separately.** Their cash flow and debt include customer
+  deposits and loans, so those measures return `NOT_APPLICABLE_BANK` rather than
+  a number that would read as a finding; capital adequacy, loan-to-deposit,
+  CASA and net interest margin, as published by Sectors, are reported instead.
+  Sectors' `cost_to_income_ratio` is deliberately not shown: it reads 1.89 for
+  BBRI against 0.52 for BBCA, and `efficiency_ratio` equals ROA in the payloads
+  we hold, so both look wrong at the source.
+- An **Evidence coverage** card (`web/lib/agent/coverage.ts`) lists what the
+  report rests on, what could not be measured, and what to check next. It
+  carries no grade and no confidence number.
+- "Nearby context" is a dated table, newest first, with items that tag several
+  stocks marked as not specific. It remains timing context, never a cause.
+
+### Compatibility
+
+`ReportSection` gained `headline`, `bullets`, `rows`; `paragraphs` is still
+filled with `[headline, ...bullets]`, so the overview row detail, saved-run
+history and older saved reports (paragraphs only) render unchanged. No
+migration: `sections` and `package` are jsonb. `coverage` is read out of the
+saved package with a JSON path (`package->coverage`), so history reads do not
+pull whole packages.
+
+### Deliberately not done
+
+- No combined score, grade or confidence number anywhere in the new output.
+- Not adopted from the references: bull/bear debate, investor-framework scores,
+  backtests, indicators, prediction waterfalls, buy/hold/sell ratings.
+- The "Healthy" verdict still reads `serve_alert`, which is fixture-only for
+  two symbols, so BMRI can show "Healthy" beside a concentration band of 4 of 5.
+  The new table makes the mismatch visible; fixing it means deriving alerts in
+  the Python batch, which is separate work already listed in `CLAUDE.md`.
+
+### Verified
+
+`tsc --noEmit`, `eslint` and vitest clean (new tests for formatting, the
+grounding check, quality metrics worked by hand, and coverage). A live
+narration pass over the captured BBRI fixture package passed the grounding
+check on every model-written section. The non-bank paths (cash flow, leverage)
+are covered by hand-built tests only: no non-bank `sections=financials` payload
+is in the cache yet, so their field names are unverified against live data.
+
+## Symbol page: summary first, full analysis on a Details page
+
+The per-symbol page carried eight equal-weight key points, an eleven-line
+coverage card ahead of any finding, and the full report expanded inside a
+narrow side column — too much to reach a conclusion from. It is now a one-screen
+summary (`web/components/SummaryCard.tsx`, built in code by
+`web/lib/agent/summary.ts` from the saved report's own rows): the broker-flow
+finding, concentration / breadth / persistence side by side, at most three other
+standouts, and a **View full analysis** button to `/[symbol]/details`, which
+holds all sections, the coverage card, the past-runs picker and the cohort
+table. Pattern taken from the references' "page 1" summaries; no model call,
+credit or migration, and saved runs get the new layout without re-running.
+
+- Standouts are listed in report order, never re-ranked by size: ordering unlike
+  measures against each other would be a combined score by another name.
+- Component cards now label themselves from each block's own `basis`
+  (`measured` / `example`) instead of a hard-coded "example"; the "scoring not
+  finalised" stamp shows only for non-measured components.
+- The hand-written cohort table is shown only on Details, marked as example data.
+- Latest-quarter growth rows are labelled "…, latest quarter" so they no longer
+  read as contradicting the full-year growth rows (applies to new runs).
+
+## Symbol page: price chart and key stats on our own data
+
+The stock page now opens like a TradingView symbol page: last close and day
+change, a price + volume chart with 1M / 3M / All tabs, and a key-stats panel,
+above the analyst summary.
+
+- Data is the daily closes already ingested into `serve_price_history`: zero
+  Sectors credits, no batch change, no migration. The chart is drawn with
+  TradingView's open-source `lightweight-charts`; the figures are ours.
+- Sectors publishes close and volume only (no open/high/low), so there are no
+  candlesticks, and history is the frozen ~61-session window, so no 1Y tabs.
+  Both are stated on the page.
+- The TradingView embed widget was rejected: its data is TradingView's, at
+  today's date, so it would not match the frozen review date or the figures in
+  the report, and its ratings gauges are buy/sell signals this product does not give.
+- Header and performance figures are described as end-of-day closes, not live.
+  A period with too few sessions shows "not enough data", never 0.
+- Key stats reuse the saved report's own valuation and fundamentals rows plus
+  the saved identity block; nothing is recomputed in the page.
+
+### Symbol page layout follow-ups
+
+- The chart is full width and 380px tall, with key stats in a compact three-column
+  grid under it. A side-by-side layout left blank space under the chart whenever
+  the stats list was longer. Key stats show a short fixed list (market cap, sector,
+  sub-sector, listing date, P/E, P/B, forward P/E, EPS, ROE, net margin, dividend
+  yield); peer comparisons stay in the full analysis and in hover text.
+- A restyle with tinted tiles and pill statuses was tried and reverted: it looked
+  worse than the plain bordered tiles. The page keeps the plain style and adds a
+  short staggered entrance animation instead (`animate-rise` in `web/app/globals.css`,
+  disabled under `prefers-reduced-motion`).
+- The global `a { color }` rule is now inside `@layer base`. Unlayered CSS beats
+  every Tailwind utility, so any link styled as a filled button with `text-white`
+  rendered blue on blue (and dark blue on hover). Layered, utilities win again.
+- Known gap: the header sentence still says "last 20 sessions" (from the fixture
+  run window) while the chart covers all ingested sessions (61 for the demo window).
+
+## Run status from saved runs, and History as its own area
+
+### Why
+
+Running the analyst changed nothing visible. The overview chip came from `isFlagged()`,
+which read the two-symbol fixture, so BBCA/ANTM were always "Review" and the other eight
+always "Stable"; the saved verdict went through the same fixture alert, so those eight were
+always "Healthy". The dashboard also forgot a run on reload (its state was a browser
+variable), and the "Past runs" dropdowns swapped report text while verdicts, totals and
+charts beside it stayed current.
+
+### Decisions
+
+- Status is derived from the scored components in one place (`lib/flowStatus.ts`), as three
+  independent signals with named constant cuts. Concentration keeps the existing top-40%
+  band cut; breadth crosses when its share exceeds its own baseline by more than the
+  existing 1-point tolerance; persistence crosses at 60% of trailing sessions in one
+  direction (new constant — the batch publishes no persistence baseline). Breadth and
+  persistence cuts are new and should be revisited against real data.
+- `null` (not measurable) is kept apart from `false` (measured, not crossed), matching the
+  coverage rule. Never a count or score across components.
+- Status is read from the run's own saved components, so it reflects what the analyst saw;
+  it becomes `Outdated` when the scored data date or the held lots differ from the run's.
+- Verdict shown for a saved report is recomputed from its saved components
+  (`savedVerdict`), so reports saved under the old fixture-dependent rule are not shown
+  with a misleading "Healthy".
+- History is a separate read-only area. Each Run Analyst pass generates one run id up
+  front; per-symbol `agent_runs` rows carry it and the `portfolio_runs` row uses it as its
+  primary key. No foreign key (per-symbol rows are written first; single-symbol runs have
+  none). Migration `0009` backfills existing rows within 30 minutes of a matching portfolio
+  run and leaves the rest null rather than guess.
+- The layout reads only the latest run per symbol and the latest portfolio run; older runs
+  are fetched on demand under `/history`.
+
+### Not changed
+
+The data window is frozen, so two runs over the same holdings will often be identical; the
+History list says "No change from the previous run" in that case rather than inventing a
+difference.
+
+## Live research step log landed
+
+The "live streaming of the step log" item above is built (commit `f484199`, hardened
+afterwards). The generator shape did make the route a thin addition.
+
+- **`fetch` + reader, not `EventSource`.** `EventSource` reconnects when the server closes
+  the stream normally, which would silently re-run the pipeline and spend credits again.
+- **POST, not GET.** A run spends Sectors credits and writes rows, so a link or prefetch
+  must not trigger it. The route validates the ticker (`[A-Z]{4}`) and `runId` (UUID).
+- **A "Writing report" step** is streamed around LLM narration and the save, which is the
+  longest silent stretch. It is stream-only and not pushed into `pkg.steps`, so saved
+  traces and History are unchanged.
+- **Disconnects do not abort a run.** The credits are spent; the run finishes and saves.
+- **Dashboard stays "running" through the portfolio summary**, so it no longer says
+  "finished" while the synthesis pass is still writing.
+- Network errors, a bad frame, or an expired session now return an error result instead of
+  leaving the dashboard stuck on "Researching…".
+- Removed the unused non-streaming `runAnalystForSymbol` / `runResearch`.
+
+Still not streamed: LLM narration tokens (text is validated by `grounding.ts` only once
+complete) and the portfolio synthesis pass.
+
+## Macro and policy context: sourced headlines, keyed by date — 2026-10-08
+
+### Problem
+
+`macro` was a permanently `UNAVAILABLE` block (`NO_SEARCH_PROVIDER`): no search key was
+read anywhere, so every report carried the same gap.
+
+### Decision
+
+- **Tavily**, via `TAVILY_API_KEY`, through `web/lib/search/tavily.ts` and the existing
+  cache (`getOrFetch` gained an optional `fetcher`). Searches cost 0 Sectors credits, so the
+  per-run ceiling is unaffected. No migration: the `sectors_cache` table is reused.
+- **Headlines only.** The block keeps title, publisher, date and URL. A figure pulled out of a
+  snippet would put raw text in front of the model and need a new verbatim-quote check; a
+  headline with its link cannot be stated without its source.
+- **Keyed by date window, not symbol.** Macro is the same for every holding, so one set of
+  four searches (30 days to the review date) serves all ten symbols. The window ends at the
+  review date so a run never shows news from after the data it reviews.
+- Timing context only, like nearby news and filings: never a cause of the flow pattern.
+- No key set: unchanged behaviour — `UNAVAILABLE` / `NO_SEARCH_PROVIDER`, shown as a gap.
+
+### Not done
+
+The portfolio-wide summary does not yet carry a macro section; each per-symbol report does.

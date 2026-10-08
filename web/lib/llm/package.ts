@@ -1,10 +1,7 @@
-import {
-  getAlert,
-  getEvidence,
-  getComponents,
-  getPeerScreen,
-} from "@/lib/data/source";
+import { getComponents } from "@/lib/data/source";
 import { fetchComponents } from "@/lib/data/results";
+import { fetchAgentRuns } from "@/lib/data/agentRuns";
+import { buildPeerScreen } from "@/lib/agent/peerScreen";
 import { computeVerdict, type Verdict } from "@/lib/verdict";
 import type {
   ServeAlertEvidenceRecord,
@@ -36,19 +33,22 @@ export interface AnalystPackage {
  * package was fixture-only, before real broker-flow scoring existed at all.
  */
 export async function buildAnalystPackage(symbol: string): Promise<AnalystPackage | null> {
-  const alert = getAlert(symbol);
   const [real] = await fetchComponents([symbol]);
   const components = real ?? getComponents(symbol);
   if (!components) return null;
 
+  // Peers come from the latest saved Run Analyst pass; the alert fixtures are
+  // not read, so BBCA/ANTM-only text never reaches another symbol's chat.
+  const savedRun = (await fetchAgentRuns([symbol])).get(symbol);
+
   return {
     symbol,
     trade_date: components.trade_date,
-    verdict: computeVerdict(alert, components),
-    summary: alert?.summary ?? "This holding is not flagged this run.",
+    verdict: computeVerdict(components),
+    summary: "Scored from the saved broker-flow components.",
     components,
-    evidence: getEvidence(symbol),
-    peer_screen: getPeerScreen(symbol) ?? null,
+    evidence: [],
+    peer_screen: savedRun ? buildPeerScreen(symbol, savedRun) : null,
   };
 }
 

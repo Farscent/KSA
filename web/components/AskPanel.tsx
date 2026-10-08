@@ -88,7 +88,7 @@ export function AskPanel({ totals, flaggedSymbols, hasSummary }: AskPanelProps) 
           )}
 
           <div className="mt-3.5 flex flex-wrap gap-2">
-            {["Why is a holding flagged?", "What does coverage mean?", "How is unrealized P&L calculated?"].map((s) => (
+            {["Which holdings crossed a threshold?", "What does coverage mean?", "How is unrealized P&L calculated?"].map((s) => (
               <button
                 key={s}
                 onClick={() => submit(s)}

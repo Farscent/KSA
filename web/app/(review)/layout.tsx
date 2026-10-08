@@ -1,8 +1,8 @@
 import { HoldingsProvider } from "@/lib/holdings/store";
 import { ResultsProvider } from "@/lib/data/ResultsProvider";
 import { fetchComponents, fetchFlowSeries, fetchPositions, fetchPriceHistory, fetchRun } from "@/lib/data/results";
-import { fetchAgentRuns, fetchAgentRunHistory } from "@/lib/data/agentRuns";
-import { fetchPortfolioRunHistory } from "@/lib/data/portfolioRuns";
+import { fetchAgentRuns } from "@/lib/data/agentRuns";
+import { fetchLatestPortfolioRun } from "@/lib/data/portfolioRuns";
 import { fetchHoldings, fetchIntents } from "@/lib/holdings/data";
 import { getComponents, getFlowSeries } from "@/lib/data/source";
 import { HeaderBar } from "@/components/HeaderBar";
@@ -26,12 +26,9 @@ export default async function ReviewLayout({ children }: { children: React.React
   ]);
   const priceHistory = await fetchPriceHistory(positions.map((p) => p.symbol));
   const symbolsHeld = holdings.map((h) => h.sym);
-  const [agentRuns, agentRunHistory, portfolioRunHistory] = await Promise.all([
-    fetchAgentRuns(symbolsHeld),
-    fetchAgentRunHistory(symbolsHeld),
-    fetchPortfolioRunHistory(),
-  ]);
-  const portfolioRun = portfolioRunHistory[0] ?? null;
+  // Latest only. Older runs are read on demand under /history, so every page
+  // no longer downloads every saved report.
+  const [agentRuns, portfolioRun] = await Promise.all([fetchAgentRuns(symbolsHeld), fetchLatestPortfolioRun()]);
 
   // Real scored components (sectors/scoring.py) take priority over the two
   // fixture symbols; a symbol in neither has genuinely never been scored,
@@ -62,8 +59,6 @@ export default async function ReviewLayout({ children }: { children: React.React
       run={run}
       agentRuns={agentRuns}
       portfolioRun={portfolioRun}
-      agentRunHistory={agentRunHistory}
-      portfolioRunHistory={portfolioRunHistory}
       components={components}
       flowSeries={flowSeries}
     >

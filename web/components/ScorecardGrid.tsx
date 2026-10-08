@@ -97,8 +97,8 @@ export function ScorecardGrid({
         </div>
       </div>
       <div className="px-4.5 py-3 font-mono text-[10.5px]" style={{ background: "#faf9f7", color: "var(--color-muted-2)" }}>
-        Quarterly figures are cohort flow aggregates, not valuation or performance measures. Cells marked
-        unavailable are never treated as zero.
+        Figures are reported by Sectors as published, not forecasts. Cells marked unavailable are never
+        treated as zero.
       </div>
     </div>
   );

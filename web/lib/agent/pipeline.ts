@@ -19,8 +19,7 @@ import { fetchComponents, fetchFlowSeries, fetchPositions } from "@/lib/data/res
 import { fetchHoldings } from "@/lib/holdings/data";
 import { SHARES_PER_LOT } from "@/lib/holdings/units";
 import { computeVerdict } from "@/lib/verdict";
-import { getAlert } from "@/lib/data/source";
-import { CreditLedger, CreditCeilingError, SectorsError } from "@/lib/sectors/cache";
+import { CreditLedger, CreditCeilingError, SectorsError, getOrFetch } from "@/lib/sectors/cache";
 import {
   companyReport,
   corporateActions,
@@ -33,13 +32,17 @@ import {
   projectFinancials,
   projectFuture,
   projectIdentity,
+  projectMacro,
   projectNearbyContext,
   projectPeers,
   projectSubsector,
   projectValuation,
 } from "@/lib/research/project";
 import { unavailable } from "@/lib/research/types";
-import { peerMetrics, positionMetrics, valuationMetrics } from "@/lib/agent/metrics";
+import { SearchError, searchConfigured, tavilySearch } from "@/lib/search/tavily";
+import { MACRO_TOPICS } from "@/lib/search/topics";
+import { peerMetrics, positionMetrics, qualityMetrics, valuationMetrics } from "@/lib/agent/metrics";
+import { evidenceCoverage } from "@/lib/agent/coverage";
 import type { ResearchPackage, StepStatus, StepTrace } from "@/lib/agent/package";
 import type { ServeComponentsRecord, ServeFlowSeriesRecord } from "@/lib/contract/types";
 
@@ -94,6 +97,7 @@ function emptyPackage(symbol: string): ResearchPackage {
       close_vs_intrinsic_pct: none, latest_pe: none, latest_pe_peer_avg: none, latest_valuation_year: none,
     },
     financials: unavailable("NOT_RUN"),
+    quality_metrics: qualityMetrics(unavailable("NOT_RUN"), unavailable("NOT_RUN")),
     future: unavailable("NOT_RUN"),
     dividend: unavailable("NOT_RUN"),
     peers: unavailable("NOT_RUN"),
@@ -104,14 +108,17 @@ function emptyPackage(symbol: string): ResearchPackage {
     },
     subsector: unavailable("NOT_RUN"),
     context: unavailable("NOT_RUN"),
-    // Declared, not omitted: there is no search provider configured, and a
-    // macro figure without a source URL must never be stated.
-    macro: unavailable("NO_SEARCH_PROVIDER"),
+    // Declared, not omitted: a macro headline without a source URL must
+    // never be stated, so a missing search key shows as an honest gap.
+    macro: unavailable("NOT_RUN"),
     provenance: [],
     steps: [],
     credits_used: 0,
   };
 }
+
+/** How far back from the review date macro headlines are searched. */
+const MACRO_WINDOW_DAYS = 30;
 
 const STEPS: Step[] = [
   {
@@ -160,7 +167,7 @@ const STEPS: Step[] = [
       const record = components[0] ?? null;
       ctx.pkg.flow = { components: record, series };
       if (record?.trade_date) ctx.pkg.trade_date = record.trade_date;
-      ctx.pkg.verdict = computeVerdict(getAlert(ctx.symbol), record ?? undefined);
+      ctx.pkg.verdict = computeVerdict(record);
 
       if (!record) return "no scored components yet — run the Python batch";
       const parts: string[] = [];
@@ -192,6 +199,7 @@ const STEPS: Step[] = [
     async run(ctx) {
       const { payload } = await companyReport(ctx.symbol, ["financials"], ctx.ledger);
       ctx.pkg.financials = projectFinancials(payload);
+      ctx.pkg.quality_metrics = qualityMetrics(ctx.pkg.financials, ctx.pkg.identity);
       // Deliberately annual-only. `quarterlyFinancials` exists in
       // lib/sectors/endpoints.ts but is not called here: it bills 1 credit per
       // quarter, and the report's growth figures already come from this
@@ -273,6 +281,47 @@ const STEPS: Step[] = [
       return `${data.news.length} news · ${data.filings.length} filings · ${data.corporate_actions.length} corporate actions`;
     },
   },
+  {
+    id: "macro",
+    label: "Searching macro and policy news",
+    async run(ctx) {
+      if (!searchConfigured()) {
+        ctx.pkg.macro = unavailable("NO_SEARCH_PROVIDER");
+        return "no search provider configured — macro context skipped";
+      }
+      // Window ends at the review date, never after it: a run must not show
+      // headlines from later than the data it reviews.
+      const end = (ctx.pkg.trade_date || new Date().toISOString()).slice(0, 10);
+      const start = new Date(new Date(`${end}T00:00:00Z`).getTime() - MACRO_WINDOW_DAYS * 86_400_000)
+        .toISOString()
+        .slice(0, 10);
+
+      // Keyed by window, not symbol, so the ten demo symbols share one set.
+      const results = await Promise.allSettled(
+        MACRO_TOPICS.map((topic) =>
+          getOrFetch(
+            "tavily/search",
+            { query: topic.query, start_date: start, end_date: end },
+            { credits: 0, ledger: ctx.ledger, ttlDays: 1, fetcher: tavilySearch }
+          )
+        )
+      );
+      const fulfilled = results.flatMap((r, i) =>
+        r.status === "fulfilled" ? [{ topic: MACRO_TOPICS[i].id as string, payload: r.value.payload }] : []
+      );
+      if (fulfilled.length === 0) {
+        const first = results.find((r): r is PromiseRejectedResult => r.status === "rejected");
+        ctx.pkg.macro = unavailable(first?.reason instanceof SearchError ? first.reason.reason_code : "SEARCH_FAILED");
+        return "search failed for every topic";
+      }
+
+      ctx.pkg.macro = projectMacro(fulfilled, { start, end });
+      const data = ctx.pkg.macro.data;
+      return data
+        ? `${data.items.length} headlines across ${new Set(data.items.map((i) => i.topic)).size} topics · ${start} to ${end}`
+        : "no headlines found in the window";
+    },
+  },
 ];
 
 /**
@@ -339,16 +388,7 @@ export async function* runPipeline(symbol: string): AsyncGenerator<PipelineEvent
   ctx.pkg.provenance = ctx.ledger.provenance;
   ctx.pkg.credits_used = ctx.ledger.used;
   if (!ctx.pkg.trade_date) ctx.pkg.trade_date = new Date().toISOString().slice(0, 10);
+  ctx.pkg.coverage = evidenceCoverage(ctx.pkg);
 
   yield { type: "done", package: ctx.pkg };
-}
-
-/** Drains the pipeline for callers that do not stream (the current server action). */
-export async function runResearch(symbol: string): Promise<ResearchPackage> {
-  let pkg: ResearchPackage | null = null;
-  for await (const event of runPipeline(symbol)) {
-    if (event.type === "done") pkg = event.package;
-  }
-  if (!pkg) throw new Error("pipeline produced no package");
-  return pkg;
 }
